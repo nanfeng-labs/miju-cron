@@ -21,7 +21,7 @@ docsrs = ["dep:document-features"]
 serde = ["dep:serde", "chrono?/serde", "miju-core/serde"]
 ## Enable English routines using english-to-cron.
 english = ["dep:english-to-cron", "dep:cron", "chrono"]
-## Enable the fluent UTC schedule builder.
+## Enable the fluent timezone-aware schedule builder.
 builder = ["chrono"]
 ## Enable schedules and timezones from jiff-cron.
 jiff = ["dep:jiff-cron"]
