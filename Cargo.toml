@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 repository = "https://github.com/nanfeng-labs/miju-cron"
 description = "A simple and extensible library for scheduling recurring tasks in rust."
-rust-version = "1.85.0"
+rust-version = "1.89.0"
 license = "MIT"
 
 [features]
@@ -21,7 +21,7 @@ docsrs = ["dep:document-features"]
 serde = ["dep:serde", "chrono?/serde", "miju-core/serde"]
 ## Enable English routines using english-to-cron.
 english = ["dep:english-to-cron", "dep:cron", "chrono"]
-## Enable the fluent UTC schedule builder.
+## Enable the fluent timezone-aware schedule builder.
 builder = ["chrono"]
 ## Enable schedules and timezones from jiff-cron.
 jiff = ["dep:jiff-cron"]

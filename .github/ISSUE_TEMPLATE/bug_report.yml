@@ -65,8 +65,8 @@ body:
       description: |
         Please provide information about your environment:
         - OS: [e.g. Ubuntu 26.04, macOS 27.0, Windows 11]
-        - Rust version: [e.g. 1.85.0]
-        - Cargo version: [e.g. 1.85.0]
+        - Rust version: [e.g. 1.89.0]
+        - Cargo version: [e.g. 1.89.0]
       value: |
         - OS:
         - Rust version:

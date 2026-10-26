@@ -1,6 +1,6 @@
 #[cfg(feature = "builder")]
 #[test]
-fn builder_preserves_interval_and_timezone_behavior() {
+fn builder_respects_interval_and_timezone() {
     use miju_cron::{
         Schedule,
         builder::schedule,
@@ -9,8 +9,7 @@ fn builder_preserves_interval_and_timezone_behavior() {
     let mut every_two = schedule().every(2).minutes().build::<chrono::Utc>();
     let first = every_two.next_tick(&chrono::Utc).unwrap().get_timestamp();
     let second = every_two.next_tick(&chrono::Utc).unwrap().get_timestamp();
-    // The reference multiplies the stored interval by Minutes(interval).
-    assert_eq!(second - first, 4 * 60);
+    assert_eq!(second - first, 2 * 60);
     let mut at = schedule()
         .every(2)
         .minutes()
@@ -18,17 +17,17 @@ fn builder_preserves_interval_and_timezone_behavior() {
         .build::<chrono::Utc>();
     let first = at.next_tick(&chrono::Utc).unwrap().get_timestamp();
     let second = at.next_tick(&chrono::Utc).unwrap().get_timestamp();
-    assert_eq!(second - first, 60);
+    assert_eq!(second - first, 2 * 60);
     assert_eq!(first % 60, 17);
     let mut daily = schedule().each().day().at("10:30").build::<chrono_tz::Tz>();
     daily.next_tick(&New_York).unwrap();
     let mut same_start = daily.clone();
-    assert_eq!(
+    assert_ne!(
         daily.next_tick(&New_York).unwrap().get_timestamp(),
         same_start.next_tick(&Tokyo).unwrap().get_timestamp()
     );
     let mut weekday_without_unit = schedule().each().monday().build::<chrono::Utc>();
-    assert!(weekday_without_unit.next_tick(&chrono::Utc).is_none());
+    assert!(weekday_without_unit.next_tick(&chrono::Utc).is_some());
     let mut weekly = schedule()
         .each()
         .week()
@@ -83,24 +82,45 @@ fn cron_finite_schedule_has_no_past_tick() {
 
 #[cfg(feature = "builder")]
 #[test]
-fn builder_zero_interval_retains_timestamp() {
+fn builder_rejects_zero_and_invalid_times() {
     use miju_cron::{Schedule, builder::schedule};
-    let mut zero = schedule().every(0).minutes().build::<chrono::Utc>();
-    let first = zero.next_tick(&chrono::Utc).unwrap().get_timestamp();
-    let second = zero.next_tick(&chrono::Utc).unwrap().get_timestamp();
-    assert_eq!(first, second);
+    for at in [None, Some(":17")] {
+        let mut builder = schedule().every(0).minutes();
+        if let Some(at) = at {
+            builder = builder.at(at);
+        }
+        let mut zero = builder.build::<chrono::Utc>();
+        assert!(zero.next_tick(&chrono::Utc).is_none());
+    }
+    for at in ["bad", ":60", "25:00", "10:60", "10:30:60"] {
+        assert!(
+            schedule()
+                .each()
+                .day()
+                .at(at)
+                .build::<chrono::Utc>()
+                .next_tick(&chrono::Utc)
+                .is_none()
+        );
+    }
 }
 
-#[cfg(all(feature = "builder", debug_assertions))]
+#[cfg(feature = "builder")]
 #[test]
-#[should_panic(expected = "attempt to multiply with overflow")]
-fn builder_large_interval_preserves_reference_debug_overflow() {
+fn builder_large_intervals_do_not_overflow() {
     use miju_cron::{Schedule, builder::schedule};
-    schedule()
-        .every(65_536)
-        .minutes()
-        .build::<chrono::Utc>()
-        .next_tick(&chrono::Utc);
+    for n in [65_536, u32::MAX] {
+        for at in [None, Some(":17")] {
+            let mut builder = schedule().every(n).minutes();
+            if let Some(at) = at {
+                builder = builder.at(at);
+            }
+            let mut schedule = builder.build::<chrono::Utc>();
+            let first = schedule.next_tick(&chrono::Utc).unwrap().get_timestamp();
+            let second = schedule.next_tick(&chrono::Utc).unwrap().get_timestamp();
+            assert_eq!(second - first, u64::from(n) * 60);
+        }
+    }
 }
 
 #[cfg(feature = "cron")]

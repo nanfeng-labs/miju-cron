@@ -54,7 +54,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 快速开始使用了 `cron::Schedule`，因此应用需要显式添加 `cron` 依赖。请提交应用的 `Cargo.lock`，以固定本次解析到的 Git 提交。
 
-当前依赖组合（包括 ULID 任务 ID）需要 **Rust 1.89 或更高版本**。包清单中的 `rust-version` 仍为 1.85；CI 使用 Rust 1.89 检查完整 feature 集。
+最低支持的 Rust 版本为 **1.89.0**。CI 使用 Rust 1.89.0 检查完整 feature 集。
 
 ## 快速开始
 
@@ -101,7 +101,7 @@ async fn main() -> Result<(), BoxDynError> {
 | `serde` | `Tick` 和 `Config` 的序列化。 | 是 |
 | `chrono` | Chrono 和 chrono-tz 时区支持。 | 由 `cron` 启用 |
 | `english` | 使用英文调度规则的 `EnglishRoutine`，同时启用 `chrono`。 | 否 |
-| `builder` | 链式构建调度规则，同时启用 `chrono`；UTC 和间隔限制见下文。 | 否 |
+| `builder` | 链式构建调度规则，同时启用 `chrono`；调度及夏令时行为见下文。 | 否 |
 | `jiff` | `JiffSchedule` 和 jiff 时区支持。 | 否 |
 | `docsrs` | 在 API 文档中生成 feature 参考。 | 否 |
 
@@ -148,9 +148,13 @@ Cron 和英文适配器基于当前时钟计算后续时间，builder 则保留�
 - **关闭与克隆**：`poll_close` 立即确认关闭，但不重置调度器。丢弃调度器会取消其定时器；克隆或替换时区会清除缓存 tick 和定时器，同时保留调度规则的当前状态。
 - **miju-core 0.1.0 的 Worker EOF 问题**：有限 tick 流能够结束，但 Worker 读到流末尾后不会自动完成关闭。显式停止 Worker 可以正常工作。本仓库仍依赖这一发布版本，因此自动关闭的回归测试仍会失败。
 
-### Builder 限制
+### Builder 调度行为
 
-当前 builder 即使指定其他时区，仍按 UTC 计算。不指定 `at` 时，`every(n).minutes()` 每次推进 `n * n` 分钟；指定 `at` 时，推进到下一个匹配的分钟。指定星期但没有调用 `.week()` 时，规则缺少时间单位，不会产生 tick。零间隔不会推进；足够大的分钟间隔会使中间的 `u32` 乘法在 debug 构建中溢出。
+Builder 使用传给 `next_tick` 的时区，包括通过 `CronScheduler::with_timezone` 指定的时区。`every(n).minutes()` 每次推进 `n` 分钟；配合 `.at(":17")` 时，首次 tick 对齐到即将到来的第 17 秒，之后每次推进 `n` 个本地分钟。没有 `at` 的分钟、小时规则按实际经过时间推进；日、周规则在时区偏移变化时保留本地钟表时间。
+
+`.monday()` 等星期方法会自动选择周调度，替换此前的时间单位并保留间隔，因此 `.each().monday()` 不再需要先调用 `.week()`。
+
+零间隔、无效 `at` 字符串、日期溢出，以及夏令时切换中重复或不存在的本地时间都会返回 `None`。Builder 不会擅自选择重复时间中的一次，也不会将不存在的时间向后挪动。对 Worker 而言，`None` 表示调度结束；若需要不同的夏令时处理方式，可使用 cron 适配器。`at` 支持 `:SS`、`HH:MM` 和 `HH:MM:SS`：分钟规则使用秒，小时规则使用分和秒，日、周规则使用完整时间。
 
 ## API 文档
 

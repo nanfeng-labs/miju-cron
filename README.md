@@ -54,7 +54,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 The quick start imports `cron::Schedule`, so `cron` is an explicit application dependency. Commit your application's `Cargo.lock` to retain the resolved Git revision.
 
-Use **Rust 1.89 or later** for the current dependency set, including ULID task IDs. The package manifest's `rust-version` is still 1.85; CI checks the complete feature set with Rust 1.89.
+The minimum supported Rust version is **1.89.0**. CI checks the complete feature set with Rust 1.89.0.
 
 ## Quick start
 
@@ -101,7 +101,7 @@ The default features are `cron` and `serde`.
 | `serde` | Serialization for `Tick` and `Config`. | Yes |
 | `chrono` | Chrono and chrono-tz timezone support. | Via `cron` |
 | `english` | `EnglishRoutine` for English scheduling expressions; enables `chrono`. | No |
-| `builder` | Fluent schedule construction; enables `chrono`. See the UTC and interval limitations below. | No |
+| `builder` | Fluent schedule construction; enables `chrono`. See scheduling and DST behavior below. | No |
 | `jiff` | `JiffSchedule` and jiff timezone support. | No |
 | `docsrs` | Generated feature reference in the API documentation. | No |
 
@@ -148,9 +148,13 @@ The scheduler does not persist schedule rules, replay missed occurrences after d
 - **Close and clone**: `poll_close` acknowledges immediately without resetting the scheduler. Dropping the scheduler cancels its timer. Cloning or replacing the timezone clears the cached tick and timer while preserving the schedule's current state.
 - **Worker EOF with miju-core 0.1.0**: a finite tick stream ends, but a Worker reaching that end does not automatically complete shutdown. Explicit Worker stop works. The repository still depends on this published version, so the automatic-completion regression test remains failing.
 
-### Builder limitations
+### Builder scheduling
 
-The current builder calculates in UTC even when another timezone is supplied. Without an `at` time, `every(n).minutes()` advances by `n * n` minutes; with `at`, it advances to the next matching minute. A weekday without `.week()` has no unit and produces no tick. Zero intervals do not advance, and sufficiently large minute intervals overflow the intermediate `u32` multiplication in debug builds.
+The builder uses the timezone passed to `next_tick`, including the timezone selected with `CronScheduler::with_timezone`. `every(n).minutes()` advances by `n` minutes. With `.at(":17")`, the first tick aligns to an upcoming second 17 and subsequent ticks advance by `n` local minutes. Minute/hour intervals without `at` use elapsed time; day/week schedules preserve local wall time across offset changes.
+
+Weekday methods such as `.monday()` select weekly scheduling automatically, replacing any previously selected unit while retaining the interval. `.each().monday()` therefore works without `.week()`.
+
+Zero intervals, invalid `at` strings, date overflow, and ambiguous or nonexistent local times during daylight-saving transitions return `None`. The builder does not silently choose one occurrence of a repeated local time or move a missing local time forward. For a Worker, `None` means the schedule has ended; choose a cron adapter if you need its different DST handling. Valid `at` forms are `:SS`, `HH:MM`, and `HH:MM:SS`; minute schedules use seconds, hour schedules use minutes and seconds, and day/week schedules use the full time.
 
 ## API documentation
 
