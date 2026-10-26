@@ -1,0 +1,307 @@
+
+# cargo-vet config file
+
+[cargo-vet]
+version = "0.10"
+
+[imports.bytecode-alliance]
+url = "https://raw.githubusercontent.com/bytecodealliance/wasmtime/main/supply-chain/audits.toml"
+
+[imports.google]
+url = "https://raw.githubusercontent.com/google/supply-chain/main/audits.toml"
+
+[imports.mozilla]
+url = "https://raw.githubusercontent.com/mozilla/supply-chain/main/audits.toml"
+
+[imports.zcash]
+url = "https://raw.githubusercontent.com/zcash/rust-ecosystem/main/supply-chain/audits.toml"
+
+[[exemptions.bitflags]]
+version = "2.13.2"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.cfg-if]]
+version = "1.0.5"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.chacha20]]
+version = "0.10.2"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.cpufeatures]]
+version = "0.3.1"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.futures-channel]]
+version = "0.3.34"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.futures-macro]]
+version = "0.3.34"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.futures-sink]]
+version = "0.3.34"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.futures-task]]
+version = "0.3.34"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.futures-timer]]
+version = "3.0.4"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.futures-util]]
+version = "0.3.34"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.getrandom]]
+version = "0.4.3"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.itoa]]
+version = "1.0.18"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.js-sys]]
+version = "0.3.106"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.libc]]
+version = "0.2.191"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.linux-raw-sys]]
+version = "0.12.1"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.litrs]]
+version = "1.0.1"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.once_cell]]
+version = "1.21.4"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.pin-project]]
+version = "1.1.13"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.pin-project-internal]]
+version = "1.1.13"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.pin-project-lite]]
+version = "0.2.17"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.proc-macro2]]
+version = "1.0.107"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.r-efi]]
+version = "6.0.0"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.rand]]
+version = "0.10.3"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.rand_core]]
+version = "0.10.1"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.rustix]]
+version = "1.1.5"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.rustversion]]
+version = "1.0.23"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.serde]]
+version = "1.0.229"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.serde_core]]
+version = "1.0.229"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.serde_derive]]
+version = "1.0.229"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.serde_json]]
+version = "1.0.154"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.slab]]
+version = "0.4.12"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.syn]]
+version = "2.0.119"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.syn]]
+version = "3.0.9"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.tempfile]]
+version = "3.27.0"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.thiserror]]
+version = "2.0.21"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.thiserror-impl]]
+version = "2.0.21"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.tower-layer]]
+version = "0.3.3"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.tower-service]]
+version = "0.3.3"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.tracing]]
+version = "0.1.44"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.ulid]]
+version = "3.0.0"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.unicode-ident]]
+version = "1.0.27"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.wasm-bindgen]]
+version = "0.2.129"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.wasm-bindgen-macro]]
+version = "0.2.129"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.wasm-bindgen-macro-support]]
+version = "0.2.129"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.wasm-bindgen-shared]]
+version = "0.2.129"
+criteria = "safe-to-deploy"
+notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.web-time]]
+version = "1.1.0"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows-sys]]
+version = "0.59.0"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows-sys]]
+version = "0.61.2"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows-targets]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows_aarch64_gnullvm]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows_aarch64_msvc]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows_i686_gnu]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows_i686_gnullvm]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows_i686_msvc]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows_x86_64_gnu]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows_x86_64_gnullvm]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows_x86_64_msvc]]
+version = "0.52.6"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.zmij]]
+version = "1.0.23"
+criteria = "safe-to-deploy"
+notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
