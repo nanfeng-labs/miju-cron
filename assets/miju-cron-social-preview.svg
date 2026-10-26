@@ -52,7 +52,7 @@
     </linearGradient>
     <g id="code-accent"><path d="M 27,25 6,50 27,75 M 73,25 94,50 73,75 M 59,13 41,87"/></g>
     <g id="package-accent"><path d="M 16,32 A 40,40 0 1 1 16,72 M 16,32 V 12 M 16,32 H 36 M 52,27 V 50 L 68,60"/></g>
-  
+
     <linearGradient id="social-background" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFFDF8"/>
       <stop offset="1" stop-color="#FFF4DF"/>
