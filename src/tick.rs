@@ -3,7 +3,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use crate::timezone::Utc;
+use crate::{Error, timezone::Utc};
 
 /// Represents a single tick in the cron schedule
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -30,16 +30,23 @@ impl<Tz> Tick<Tz> {
 
     /// Returns the duration between this tick and a [`SystemTime`].
     ///
-    /// The `Ok` value is returned when the tick is at or after `system_time`,
-    /// while the `Err` value is returned when the tick is before `system_time`.
-    pub(crate) fn signed_duration_since(&self, time: SystemTime) -> Result<Duration, Duration> {
-        self.system_time()
+    /// Returns an error if the tick is in the past or cannot be represented
+    /// by the platform's system clock.
+    pub(crate) fn signed_duration_since(&self, time: SystemTime) -> Result<Duration, Error> {
+        self.system_time()?
             .duration_since(time)
-            .map_err(|e| e.duration())
+            .map_err(|e| Error::OutOfRange {
+                duration: e.duration(),
+                tick: self.timestamp,
+            })
     }
 
-    pub(crate) fn system_time(&self) -> SystemTime {
-        SystemTime::UNIX_EPOCH + Duration::from_secs(self.timestamp)
+    pub(crate) fn system_time(&self) -> Result<SystemTime, Error> {
+        SystemTime::UNIX_EPOCH
+            .checked_add(Duration::from_secs(self.timestamp))
+            .ok_or(Error::InvalidTimestamp {
+                tick: self.timestamp,
+            })
     }
 }
 
@@ -50,21 +57,18 @@ mod tests {
     #[test]
     fn timestamp_is_seconds_and_signed_delta_preserves_subseconds() {
         let tick = Tick::<Utc>::new(42);
+        let time = tick.system_time().unwrap();
+        assert_eq!(time, SystemTime::UNIX_EPOCH + Duration::from_secs(42));
+        assert_eq!(tick.signed_duration_since(time).unwrap(), Duration::ZERO);
         assert_eq!(
-            tick.system_time(),
-            SystemTime::UNIX_EPOCH + Duration::from_secs(42)
+            tick.signed_duration_since(time - Duration::from_millis(1))
+                .unwrap(),
+            Duration::from_millis(1)
         );
-        assert_eq!(
-            tick.signed_duration_since(tick.system_time()),
-            Ok(Duration::ZERO)
-        );
-        assert_eq!(
-            tick.signed_duration_since(tick.system_time() - Duration::from_millis(1)),
-            Ok(Duration::from_millis(1))
-        );
-        assert_eq!(
-            tick.signed_duration_since(tick.system_time() + Duration::from_millis(1)),
-            Err(Duration::from_millis(1))
-        );
+        assert!(matches!(
+            tick.signed_duration_since(time + Duration::from_millis(1)),
+            Err(Error::OutOfRange { duration, tick: 42 })
+                if duration == Duration::from_millis(1)
+        ));
     }
 }
