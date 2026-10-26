@@ -54,7 +54,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 The quick start imports `cron::Schedule`, so `cron` is an explicit application dependency. Commit your application's `Cargo.lock` to retain the resolved Git revision.
 
-Use **Rust 1.89 or later** for the current dependency set, including ULID task IDs. The package manifest's `rust-version` is still 1.85; CI checks the complete feature set with Rust 1.89.
+The minimum supported Rust version is **1.89.0**. CI checks the complete feature set with Rust 1.89.0.
 
 ## Quick start
 

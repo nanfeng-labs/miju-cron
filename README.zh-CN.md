@@ -54,7 +54,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 快速开始使用了 `cron::Schedule`，因此应用需要显式添加 `cron` 依赖。请提交应用的 `Cargo.lock`，以固定本次解析到的 Git 提交。
 
-当前依赖组合（包括 ULID 任务 ID）需要 **Rust 1.89 或更高版本**。包清单中的 `rust-version` 仍为 1.85；CI 使用 Rust 1.89 检查完整 feature 集。
+最低支持的 Rust 版本为 **1.89.0**。CI 使用 Rust 1.89.0 检查完整 feature 集。
 
 ## 快速开始
 
