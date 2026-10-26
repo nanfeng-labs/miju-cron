@@ -1,0 +1,22 @@
+use cron::Schedule;
+use miju::{layers::retry::RetryPolicy, prelude::*};
+use miju_cron::{CronScheduler, Tick};
+use std::str::FromStr;
+
+async fn handle_tick(tick: Tick, data: Data<usize>) {
+    assert!(*data == 42usize);
+    println!("Tick received at {}", tick.get_timestamp());
+}
+
+#[tokio::main]
+async fn main() {
+    let schedule = Schedule::from_str("@daily").unwrap();
+
+    let worker = WorkerBuilder::new("morning-cereal")
+        .backend(CronScheduler::new(schedule))
+        .retry(RetryPolicy::retries(5))
+        .data(42usize)
+        .build(handle_tick);
+
+    worker.run().await.unwrap();
+}

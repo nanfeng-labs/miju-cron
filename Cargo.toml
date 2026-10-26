@@ -1,0 +1,85 @@
+[package]
+name = "miju-cron"
+version = "0.1.0"
+edition = "2024"
+repository = "https://github.com/nanfeng-labs/miju-cron"
+description = "A simple and extensible library for scheduling recurring tasks in rust."
+rust-version = "1.85.0"
+license = "MIT"
+
+[features]
+## Enable cron expressions and serialization by default.
+default = ["cron", "serde"]
+## Enable support for `cron` crate
+## Enable Chrono and chrono-tz timezones.
+chrono = ["dep:chrono", "dep:chrono-tz"]
+## Enable cron expressions with Chrono timezones.
+cron = ["dep:cron", "chrono"]
+## Generate the feature reference in documentation.
+docsrs = ["dep:document-features"]
+## Enable Tick and Config serialization.
+serde = ["dep:serde", "chrono?/serde", "miju-core/serde"]
+## Enable English routines using english-to-cron.
+english = ["dep:english-to-cron", "dep:cron", "chrono"]
+## Enable the fluent UTC schedule builder.
+builder = ["chrono"]
+## Enable schedules and timezones from jiff-cron.
+jiff = ["dep:jiff-cron"]
+
+[dependencies]
+miju-core = { version = "0.1.0", features = ["sleep", "ulid"] }
+document-features = { version = "0.2", optional = true }
+english-to-cron = { version = "0.1.7", optional = true }
+jiff-cron = { version = "0.3.0", optional = true }
+tracing = "0.1"
+futures-util = { version = "0.3.34", default-features = false }
+ulid = { version = "3", features = ["serde"] }
+cron = { version = "0.17.0", optional = true }
+chrono = { version = "0.4.45", default-features = false, features = [
+    "clock",
+], optional = true }
+chrono-tz = { version = "0.10.4", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+thiserror = "2"
+
+[dev-dependencies]
+miju = "0.1.0"
+miju-core = { version = "0.1.0", features = ["tracing"] }
+miju-file-storage = "0.1.0"
+tower = { version = "0.5", features = ["limit", "load-shed"] }
+tokio = { version = "1", features = [
+    "macros",
+    "rt-multi-thread",
+    "time",
+    "sync",
+    "test-util",
+] }
+serde_json = "1.0"
+
+[[example]]
+name = "basic"
+required-features = ["cron"]
+
+[[example]]
+name = "builder"
+required-features = ["builder"]
+
+[[example]]
+name = "config"
+required-features = ["english", "serde"]
+
+[[example]]
+name = "custom"
+required-features = ["chrono"]
+
+[[example]]
+name = "english"
+required-features = ["english"]
+
+[[example]]
+name = "timezone"
+required-features = ["builder"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
+all-features = true

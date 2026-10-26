@@ -1,0 +1,116 @@
+
+# cargo-vet audits file
+
+[[audits.android_system_properties]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+delta = "0.1.5 -> 0.1.6"
+notes = "Reviewed complete package delta and callback call sites. Corrects C callback ABI and void return to match Android system_properties.h; cookie points to a live local Option<String> during synchronous callback. Invalid UTF-8 now returns None without unwinding through C. No new runtime dependencies or build script. Android device execution not performed."
+
+[[audits.autocfg]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+delta = "1.5.0 -> 1.5.1"
+notes = "Reviewed complete published-package delta: library sources unchanged; wrapper test replaces a shell fixture with its own harness-free executable, drains stdin, and confines environment changes to the test process. Manifest changes only declare existing tests and harness=false; no new runtime dependencies or build script."
+
+[[audits.fastrand]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+delta = "2.3.0 -> 2.5.0"
+notes = "Reviewed package source/manifests/tests delta: float generation uses finite scaled 63-bit integers, exclusive APIs reject rounded 1.0; no new unsafe code. Existing thread-local access retained. WASM entropy call updated to getrandom::fill with errors still propagated to existing fallback; dependency separately vetted. Not a cryptographic RNG. Source review plus seeded public range probe; no WASM runtime execution."
+
+[[audits.jiff-static]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.2.38"
+notes = "Reviewed complete macro source and both manifests. include reads only an explicit source-supplied path; get uses bundled TZif data. All values are emitted through quote as literals and static structures; parsing is delegated to dependencies that require separate audits. Checked generated unsafe copy against matching jiff 0.2.38 constructor, pointer tag and Drop implementation: its static TZif representation owns no Arc and remains valid after copies are dropped. Public macro probe passed 2000 clone/drop/offset checks across winter and summer dates. No network, process execution, file writes or build script. Does not certify timezone data accuracy or the separate jiff-core parser."
+
+[[audits.jiff-tzdb]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.1.9"
+notes = "Reviewed full executable Rust and manifest. no_std static TZif data lookup, checked slicing, case-insensitive binary search and slice iterator; no unsafe, build script, IO or dependencies. Validated all 598 generated table entries for unique case-insensitive ordering, range bounds, and successful independent Python zoneinfo TZif parsing. Does not certify historical timezone accuracy or future government rule changes."
+
+[[audits.jiff-tzdb-platform]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.1.3"
+notes = "Full crate review: no_std wrapper containing only a public re-export of jiff_tzdb. Manifest disables build scripts and extra targets; no executable logic or unsafe code. The separately resolved jiff-tzdb dependency still requires its own audit."
+
+[[audits.log]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+delta = "0.4.29 -> 0.4.34"
+notes = "Reviewed source/manifests/tests delta. Static and borrowed keys now compare/hash by string contents; lifetime-preserving getters return only existing borrows. Network types use Display without network operations. Boxed logger is exposed under alloc with the existing atomic installation path and Box::leak. No new unsafe implementation or runtime dependencies. Existing logger initialization synchronization unchanged."
+
+[[audits.miju-codec]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-run"
+version = "0.1.0"
+notes = "Full published-source review of lib/json/bincode/msgpack modules and manifests. Thin adapters delegate serialization to declared libraries, propagate errors and have no filesystem, network, process execution or unsafe code. Bincode trailing-byte acceptance is documented. Certification is safe-to-run only, not a guarantee for hostile unbounded input or an audit of dependencies."
+
+[[audits.phf]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.11.3"
+notes = "Full source review of map, ordered_map, set, ordered_set and crate exports; compared resolved versions. Lookups guard empty displacement arrays, use checked indexes and verify key equality; iterators retain slice lifetimes. Serde implementation only serializes. No unsafe code, IO or build script. Malformed manually constructed tables can panic; documented generated-layout contract applies. Macro and hash dependencies audited separately."
+
+[[audits.phf]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.12.1"
+notes = "Full source review of map, ordered_map, set, ordered_set and crate exports; compared resolved versions. Lookups guard empty displacement arrays, use checked indexes and verify key equality; iterators retain slice lifetimes. Serde implementation only serializes. No unsafe code, IO or build script. Malformed manually constructed tables can panic; documented generated-layout contract applies. Macro and hash dependencies audited separately."
+
+[[audits.phf]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.13.1"
+notes = "Full source review of map, ordered_map, set, ordered_set and crate exports; compared resolved versions. Lookups guard empty displacement arrays, use checked indexes and verify key equality; iterators retain slice lifetimes. Serde implementation only serializes. No unsafe code, IO or build script. Malformed manually constructed tables can panic; documented generated-layout contract applies. Macro and hash dependencies audited separately."
+
+[[audits.phf_generator]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.11.3"
+notes = "Full library and manifest review, comparing resolved versions. Deterministic compile-time hash search over checked vectors with seeded RNG; no unsafe, filesystem/network/process access or build script. Intended input is distinct build-time keys: duplicate or adversarial hash inputs can make search nonterminating, so this is not a bounded service for untrusted runtime input. Dependency audits, including rand, remain separate."
+
+[[audits.phf_generator]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.13.1"
+notes = "Full library and manifest review, comparing resolved versions. Deterministic compile-time hash search over checked vectors with seeded RNG; no unsafe, filesystem/network/process access or build script. Intended input is distinct build-time keys: duplicate or adversarial hash inputs can make search nonterminating, so this is not a bounded service for untrusted runtime input. Dependency audits, including rand, remain separate."
+
+[[audits.phf_macros]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.11.3"
+notes = "Full proc-macro source and manifest review. Parses restricted literal keys using syn, rejects duplicates before hash generation, and emits original value expressions and literal tables through quote. No filesystem, network, process access or unsafe code. Out-of-range literals may panic at compile time; no claim of graceful handling of hostile source files. Dependencies audited separately."
+
+[[audits.phf_shared]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.11.3"
+notes = "Reviewed full library source and normalized manifest, comparing all three resolved versions. Hashing delegates to SipHasher; displacement arithmetic explicitly wraps; indexing and modulo can panic for invalid caller-supplied tables but use checked Rust accesses. Borrow implementations preserve references; formatting uses Debug for strings/primitive values. No unsafe code, IO or build scripts. Dependency audits remain separate. This is a security review, not a guarantee of cross-architecture hash or arbitrary custom FmtConst correctness."
+
+[[audits.phf_shared]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.12.1"
+notes = "Reviewed full library source and normalized manifest, comparing all three resolved versions. Hashing delegates to SipHasher; displacement arithmetic explicitly wraps; indexing and modulo can panic for invalid caller-supplied tables but use checked Rust accesses. Borrow implementations preserve references; formatting uses Debug for strings/primitive values. No unsafe code, IO or build scripts. Dependency audits remain separate. This is a security review, not a guarantee of cross-architecture hash or arbitrary custom FmtConst correctness."
+
+[[audits.phf_shared]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+version = "0.13.1"
+notes = "Reviewed full library source and normalized manifest, comparing all three resolved versions. Hashing delegates to SipHasher; displacement arithmetic explicitly wraps; indexing and modulo can panic for invalid caller-supplied tables but use checked Rust accesses. Borrow implementations preserve references; formatting uses Debug for strings/primitive values. No unsafe code, IO or build scripts. Dependency audits remain separate. This is a security review, not a guarantee of cross-architecture hash or arbitrary custom FmtConst correctness."
+
+[[audits.regex-syntax]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+delta = "0.8.5 -> 0.8.11"
+notes = "Reviewed published source and manifest delta. Interval insertion preserves sorted disjoint ranges by merging the preceding and subsequent contiguous ranges with checked vector accesses; a seeded 1024-round public API probe compared every insertion against an independent 256-bit membership oracle. Unicode class translation now accounts for double negation. Other source changes are formatting/documentation; no new unsafe code, build scripts or dependencies. Target archive checksum matches Cargo.lock and extracted files match archive. Dependency-local Cargo.lock excluded from source delta."
+
+[[audits.tracing-attributes]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+delta = "0.1.30 -> 0.1.31"
+notes = "Reviewed source/manifests/tests delta and FieldName consumers. New braced expressions are parsed by syn and emitted using quote token APIs, preserving dotted identifiers. Duplicate expression field names are intentionally not deduplicated and documented. Removed AsyncTraitBlockReplacer had no call sites. No new build script, runtime IO, unsafe code or dependency changes. Macro tests inspected, not executed independently."
