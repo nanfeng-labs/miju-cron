@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- fix(builder): honor timezones and scheduling intervals ([#6](https://github.com/nanfeng-labs/miju-cron/pull/6))
 - chore(assets): add social preview SVG source ([#5](https://github.com/nanfeng-labs/miju-cron/pull/5))
 - docs(cron): refresh README and add Chinese guide ([#4](https://github.com/nanfeng-labs/miju-cron/pull/4))
 - fix(cron): reject unrepresentable tick timestamps ([#3](https://github.com/nanfeng-labs/miju-cron/pull/3))
