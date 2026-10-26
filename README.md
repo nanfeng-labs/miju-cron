@@ -53,6 +53,7 @@ A scheduler can be composed with another backend using `pipe_to`. Only tasks alr
 
 ## Current behavioral limitations
 
+- A tick outside the platform `SystemTime` range returns `InvalidTimestamp` when polled and remains cached.
 - An expired tick encountered before timer creation returns `OutOfRange` and remains cached. Polling again returns the same error. A timer already created can yield its task after the planned time.
 - `poll_close` acknowledges immediately and does not reset the scheduler. Drop the scheduler to cancel its timer. Clone and timezone replacement discard the cached tick and timer while retaining the current schedule state.
 - Builder calculates in UTC even when another timezone is supplied. `every(n).minutes()` without an `at` time advances by `n * n` minutes; with `at`, it advances to the next matching minute. A weekday without `.week()` has no unit and returns no tick. Zero intervals do not advance; sufficiently large minute intervals overflow the intermediate `u32` multiplication (panic in debug builds).

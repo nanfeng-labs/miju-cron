@@ -140,10 +140,7 @@ where
                             "cron tick is out of range"
                         );
 
-                        return Poll::Ready(Some(Err(Error::OutOfRange {
-                            duration: e,
-                            tick: next.get_timestamp(),
-                        })));
+                        return Poll::Ready(Some(Err(e)));
                     }
                 };
 
@@ -181,8 +178,8 @@ where
 
         next_tick.map(|opt| {
             opt.map(|res| {
-                res.map(|tick| {
-                    let timestamp: SystemTime = tick.system_time();
+                res.and_then(|tick| {
+                    let timestamp = tick.system_time()?;
                     let task_id = Ulid::from_datetime(timestamp);
 
                     tracing::trace!(
@@ -191,9 +188,9 @@ where
                         "building cron task"
                     );
 
-                    TaskBuilder::new(tick)
+                    Ok(TaskBuilder::new(tick)
                         .task_id(TaskId::Ulid(task_id))
-                        .build()
+                        .build())
                 })
             })
         })

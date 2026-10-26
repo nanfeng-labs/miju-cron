@@ -55,6 +55,20 @@ impl Wake for Signal {
 }
 
 #[test]
+fn extreme_timestamp_returns_error_on_first_poll() {
+    let (backend, calls) = finite([u64::MAX]);
+    let mut stream = std::pin::pin!(backend.into_stream());
+    let mut cx = Context::from_waker(std::task::Waker::noop());
+    for _ in 0..2 {
+        assert!(matches!(
+            futures_util::Stream::poll_next(stream.as_mut(), &mut cx),
+            Poll::Ready(Some(Err(Error::InvalidTimestamp { tick: u64::MAX })))
+        ));
+    }
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+}
+
+#[test]
 fn expiry_retains_same_tick_and_does_not_advance_source() {
     let (mut backend, calls) = finite([1, 2]);
     let wk = std::task::Waker::noop();
