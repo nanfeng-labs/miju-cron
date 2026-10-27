@@ -21,6 +21,16 @@ version = "2.13.2"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
 
+[[exemptions.bytes]]
+version = "1.12.1"
+criteria = "safe-to-run"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: byte buffers used by test/runtime dependencies. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.cc]]
+version = "1.10.0"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: native compilation for the Haiku timezone dependency. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
 [[exemptions.cfg-if]]
 version = "1.0.5"
 criteria = "safe-to-deploy"
@@ -31,10 +41,50 @@ version = "0.10.2"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
 
+[[exemptions.chrono]]
+version = "0.4.45"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: date/time calculations and timezone adapters. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.chrono-tz]]
+version = "0.10.4"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: generated timezone data and Chrono timezone integration. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
 [[exemptions.cpufeatures]]
 version = "0.3.1"
 criteria = "safe-to-deploy"
 notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.cron]]
+version = "0.17.0"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: cron expression parsing and iteration. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.defmt]]
+version = "1.2.0"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: embedded formatting support in the all-feature dependency graph. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.defmt-macros]]
+version = "1.2.0"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: procedural macros for embedded formatting. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.defmt-parser]]
+version = "1.1.0"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: format-string parsing for embedded formatting macros. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.english-to-cron]]
+version = "0.1.7"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: English expression to cron conversion. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.find-msvc-tools]]
+version = "0.1.15"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: Windows native toolchain discovery used by cc. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.futures-channel]]
 version = "0.3.34"
@@ -71,10 +121,30 @@ version = "0.4.3"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
 
+[[exemptions.iana-time-zone]]
+version = "0.1.65"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: platform system timezone discovery. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
 [[exemptions.itoa]]
 version = "1.0.18"
 criteria = "safe-to-deploy"
 notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.jiff]]
+version = "0.2.38"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: date/time arithmetic for the Jiff adapter. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.jiff-core]]
+version = "0.1.1"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: shared parsing and timezone implementation for Jiff. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.jiff-cron]]
+version = "0.3.0"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: Jiff cron expression parsing and iteration. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.js-sys]]
 version = "0.3.106"
@@ -96,10 +166,40 @@ version = "1.0.1"
 criteria = "safe-to-deploy"
 notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
 
+[[exemptions.memchr]]
+version = "2.8.3"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: byte searching used by parsers and test serialization. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.miju]]
+version = "0.1.1"
+criteria = "safe-to-run"
+notes = "Temporary unaudited baseline accepted on 2026-10-27: published worker framework used by integration tests. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.miju-codec]]
+version = "0.1.1"
+criteria = "safe-to-run"
+notes = "Temporary unaudited baseline accepted on 2026-10-27: serialization support for the published file backend used by integration tests. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.miju-core]]
+version = "0.1.1"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-27: published scheduler and worker interfaces. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.miju-file-storage]]
+version = "0.1.1"
+criteria = "safe-to-run"
+notes = "Temporary unaudited baseline accepted on 2026-10-27: published file backend used by integration tests. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
 [[exemptions.once_cell]]
 version = "1.21.4"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.phf_macros]]
+version = "0.13.1"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: compile-time perfect-hash table generation. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.pin-project]]
 version = "1.1.13"
@@ -116,6 +216,16 @@ version = "0.2.17"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
 
+[[exemptions.portable-atomic]]
+version = "1.15.0"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: cross-platform atomic operations used by Jiff. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.portable-atomic-util]]
+version = "0.2.8"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: allocation-backed atomic utilities used by Jiff. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
 [[exemptions.proc-macro2]]
 version = "1.0.107"
 criteria = "safe-to-deploy"
@@ -127,6 +237,11 @@ criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
 
 [[exemptions.rand]]
+version = "0.8.8"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: randomized perfect-hash table generation. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.rand]]
 version = "0.10.3"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
@@ -135,6 +250,16 @@ notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2
 version = "0.10.1"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
+
+[[exemptions.regex]]
+version = "1.13.1"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: English scheduling expression matching. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.regex-automata]]
+version = "0.4.18"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: automata implementation used by regex. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.rustix]]
 version = "1.1.5"
@@ -166,6 +291,11 @@ version = "1.0.154"
 criteria = "safe-to-deploy"
 notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
 
+[[exemptions.siphasher]]
+version = "1.0.4"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: hashing used by perfect-hash tables. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
 [[exemptions.slab]]
 version = "0.4.12"
 criteria = "safe-to-deploy"
@@ -196,6 +326,26 @@ version = "2.0.21"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
 
+[[exemptions.tokio]]
+version = "1.54.1"
+criteria = "safe-to-run"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: async runtime used by integration tests. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.tokio-macros]]
+version = "2.7.2"
+criteria = "safe-to-run"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: async test and runtime procedural macros. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.tokio-util]]
+version = "0.7.20"
+criteria = "safe-to-run"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: async utilities used by test/runtime dependencies. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.tower]]
+version = "0.5.3"
+criteria = "safe-to-run"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: service abstractions used by integration tests. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
 [[exemptions.tower-layer]]
 version = "0.3.3"
 criteria = "safe-to-deploy"
@@ -221,6 +371,11 @@ version = "1.0.27"
 criteria = "safe-to-deploy"
 notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2857b064733d15699d25c5105c7692 at identical version and criteria; replace with a matching audit when available."
 
+[[exemptions.uuid]]
+version = "1.29.0"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: identifier support in the resolved core dependency graph. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
 [[exemptions.wasm-bindgen]]
 version = "0.2.129"
 criteria = "safe-to-deploy"
@@ -245,6 +400,31 @@ notes = "Unaudited shared core dependency baseline, reused from miju 911a063b8c2
 version = "1.1.0"
 criteria = "safe-to-deploy"
 notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.windows-core]]
+version = "0.62.2"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: Windows platform bindings for timezone discovery. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.windows-implement]]
+version = "0.60.2"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: Windows interface implementation macros. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.windows-interface]]
+version = "0.59.3"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: Windows interface definition macros. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.windows-result]]
+version = "0.4.1"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: Windows error representation. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.windows-strings]]
+version = "0.5.1"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: Windows string representation and conversion. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.windows-sys]]
 version = "0.59.0"
@@ -300,6 +480,16 @@ notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105
 version = "0.52.6"
 criteria = "safe-to-deploy"
 notes = "Unaudited baseline reused from miju 911a063b8c2857b064733d15699d25c5105c7692, identical version/criteria and same file-storage, codec, core or documentation dependency role. Replace with a matching audit when available."
+
+[[exemptions.winnow]]
+version = "0.7.15"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: parsing used by cron adapters. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+
+[[exemptions.winnow]]
+version = "1.0.4"
+criteria = "safe-to-deploy"
+notes = "Temporary unaudited baseline accepted on 2026-10-26: parsing used by cron adapters. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.zmij]]
 version = "1.0.23"

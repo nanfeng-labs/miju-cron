@@ -47,7 +47,7 @@ Use the current source from this repository with the published miju dependencies
 ```toml
 [dependencies]
 miju-cron = { git = "https://github.com/nanfeng-labs/miju-cron.git", branch = "main" }
-miju = "0.1.0"
+miju = "0.1.1"
 cron = "0.17"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
@@ -146,7 +146,7 @@ The scheduler does not persist schedule rules, replay missed occurrences after d
 - **Invalid timestamps**: a tick outside the platform's `SystemTime` range returns `InvalidTimestamp` when polled. It remains cached, so repeated polling returns the same error without advancing the schedule.
 - **Expired ticks**: a tick already in the past before timer creation returns `OutOfRange` and remains cached. A timer that was created earlier can still yield its task after the scheduled time.
 - **Close and clone**: `poll_close` acknowledges immediately without resetting the scheduler. Dropping the scheduler cancels its timer. Cloning or replacing the timezone clears the cached tick and timer while preserving the schedule's current state.
-- **Worker EOF with miju-core 0.1.0**: a finite tick stream ends, but a Worker reaching that end does not automatically complete shutdown. Explicit Worker stop works. The repository still depends on this published version, so the automatic-completion regression test remains failing.
+- **Worker EOF**: with miju-core 0.1.1, a Worker consuming a finite schedule completes shutdown after the stream ends. The automatic-completion regression test covers this behavior.
 
 ### Builder scheduling
 
