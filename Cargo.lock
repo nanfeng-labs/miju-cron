@@ -408,9 +408,9 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
 name = "miju"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11df92f5e50ef57d3a19b2a9ff3f91cfa6275882975130c11bf212df7dbe056b"
+checksum = "40a959aa247effce6634c5879dbd0f721427b47d41464317919e51543d19ee0b"
 dependencies = [
  "futures-util",
  "miju-core",
@@ -423,9 +423,9 @@ dependencies = [
 
 [[package]]
 name = "miju-codec"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "983724e66231426dd7478e4d9dd581c62d92320d4e6456a8fb77d723314b08ca"
+checksum = "d1ce9561d34c225ce3e475f5d0b066eab0cdcf536f5a9e60a6cac1a63351365c"
 dependencies = [
  "miju-core",
  "serde",
@@ -434,9 +434,9 @@ dependencies = [
 
 [[package]]
 name = "miju-core"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a195226f453331f6c3756a7470f3c1380e8fa08414f2be14bb213b8a41a8f9c4"
+checksum = "5326c84ca150ae298cb2f98efe252e230d72d218f7c95909c18f092d555794b3"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -479,9 +479,9 @@ dependencies = [
 
 [[package]]
 name = "miju-file-storage"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e948e7ee5231d094edc0cd291a00fe9d9c7ad87bf3a4055256b7d72547c35c4a"
+checksum = "246da64d6fd893807bc322b9c9daef0851df69f43018a2367b5a43b9a1fa069d"
 dependencies = [
  "fd-lock",
  "futures-core",

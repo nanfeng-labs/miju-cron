@@ -27,7 +27,7 @@ builder = ["chrono"]
 jiff = ["dep:jiff-cron"]
 
 [dependencies]
-miju-core = { version = "0.1.0", features = ["sleep", "ulid"] }
+miju-core = { version = "0.1.1", features = ["sleep", "ulid"] }
 document-features = { version = "0.2", optional = true }
 english-to-cron = { version = "0.1.7", optional = true }
 jiff-cron = { version = "0.3.0", optional = true }
@@ -43,9 +43,9 @@ serde = { version = "1.0", features = ["derive"], optional = true }
 thiserror = "2"
 
 [dev-dependencies]
-miju = "0.1.0"
-miju-core = { version = "0.1.0", features = ["tracing"] }
-miju-file-storage = "0.1.0"
+miju = "0.1.1"
+miju-core = { version = "0.1.1", features = ["tracing"] }
+miju-file-storage = "0.1.1"
 tower = { version = "0.5", features = ["limit", "load-shed"] }
 tokio = { version = "1", features = [
     "macros",

@@ -47,7 +47,7 @@
 ```toml
 [dependencies]
 miju-cron = { git = "https://github.com/nanfeng-labs/miju-cron.git", branch = "main" }
-miju = "0.1.0"
+miju = "0.1.1"
 cron = "0.17"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
@@ -146,7 +146,7 @@ Cron 和英文适配器基于当前时钟计算后续时间，builder 则保留�
 - **无效时间戳**：tick 超出平台 `SystemTime` 的表示范围时，轮询返回 `InvalidTimestamp`。该 tick 仍保留在缓存中，重复轮询返回相同错误，不推进调度规则。
 - **过期 tick**：创建定时器之前，若 tick 已在过去，返回 `OutOfRange` 并保留缓存。若定时器已经创建，即使晚于计划时间再次轮询，仍可取得对应任务。
 - **关闭与克隆**：`poll_close` 立即确认关闭，但不重置调度器。丢弃调度器会取消其定时器；克隆或替换时区会清除缓存 tick 和定时器，同时保留调度规则的当前状态。
-- **miju-core 0.1.0 的 Worker EOF 问题**：有限 tick 流能够结束，但 Worker 读到流末尾后不会自动完成关闭。显式停止 Worker 可以正常工作。本仓库仍依赖这一发布版本，因此自动关闭的回归测试仍会失败。
+- **Worker EOF**：使用 miju-core 0.1.1 时，Worker 消费有限调度流后能够自动完成关闭；自动关闭回归测试覆盖了这一行为。
 
 ### Builder 调度行为
 
