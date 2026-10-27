@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- ci(release): add MIT license and align publishing workflow ([#8](https://github.com/nanfeng-labs/miju-cron/pull/8))
 - fix(deps): update miju ecosystem to 0.1.1 ([#7](https://github.com/nanfeng-labs/miju-cron/pull/7))
 - fix(builder): honor timezones and scheduling intervals ([#6](https://github.com/nanfeng-labs/miju-cron/pull/6))
 - chore(assets): add social preview SVG source ([#5](https://github.com/nanfeng-labs/miju-cron/pull/5))
