@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- bump: to v0.1.1 ([#9](https://github.com/nanfeng-labs/miju-cron/pull/9))
+
 ## [0.1.1](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.1.1)
 
 ### Scheduling
