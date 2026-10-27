@@ -68,19 +68,20 @@ fn extreme_timestamp_returns_error_on_first_poll() {
     assert_eq!(calls.load(Ordering::SeqCst), 1);
 }
 
-#[test]
-fn expiry_retains_same_tick_and_does_not_advance_source() {
-    let (mut backend, calls) = finite([1, 2]);
-    let wk = std::task::Waker::noop();
-    let mut cx = Context::from_waker(wk);
-    let ctx = WorkerContext::new("expired");
-    for _ in 0..3 {
-        assert!(matches!(
-            backend.poll_next(&mut cx, &ctx),
-            Poll::Ready(Some(Err(Error::OutOfRange { tick: 1, .. })))
-        ));
+#[tokio::test]
+async fn overdue_ticks_are_delivered_in_order_and_source_exhausts() {
+    let (backend, _) = finite([1, 2]);
+    let stream = backend.into_stream();
+    futures_util::pin_mut!(stream);
+    for timestamp in [1, 2] {
+        let tick = tokio::time::timeout(Duration::from_secs(1), stream.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert_eq!(tick.get_timestamp(), timestamp);
     }
-    assert_eq!(calls.load(Ordering::SeqCst), 1);
+    assert!(stream.next().await.is_none());
 }
 
 #[test]
@@ -253,7 +254,7 @@ async fn worker_executes_and_honors_explicit_stop() {
 }
 
 #[tokio::test]
-async fn prefetched_tick_expires_under_consumer_backpressure() {
+async fn prefetched_tick_is_delivered_after_consumer_backpressure() {
     let first = now() + 2;
     let second = first + 1;
     let (mut backend, calls) = finite([first, second]);
@@ -270,13 +271,30 @@ async fn prefetched_tick_expires_under_consumer_backpressure() {
     assert_eq!(calls.load(Ordering::SeqCst), 2);
     // Withhold polling until the prefetched deadline has passed: no timer exists for it yet.
     tokio::time::sleep(Duration::from_secs(2)).await;
-    let mut cx = Context::from_waker(std::task::Waker::noop());
-    for _ in 0..2 {
-        assert!(
-            matches!(backend.poll_next(&mut cx, &ctx), Poll::Ready(Some(Err(Error::OutOfRange { tick, .. }))) if tick == second)
-        );
-    }
-    assert_eq!(calls.load(Ordering::SeqCst), 2);
+    let task = tokio::time::timeout(
+        Duration::from_secs(1),
+        futures_util::future::poll_fn(|cx| backend.poll_next(cx, &ctx)),
+    )
+    .await
+    .unwrap()
+    .unwrap()
+    .unwrap();
+    assert_eq!(task.args.get_timestamp(), second);
+    assert_eq!(
+        task.ctx()
+            .task_id()
+            .unwrap()
+            .as_ulid()
+            .unwrap()
+            .timestamp_ms(),
+        second * 1000
+    );
+    assert_eq!(calls.load(Ordering::SeqCst), 3);
+    assert!(
+        futures_util::future::poll_fn(|cx| backend.poll_next(cx, &ctx))
+            .await
+            .is_none()
+    );
 }
 
 #[cfg(feature = "serde")]
@@ -310,4 +328,85 @@ async fn pipe_delivers_tick_to_file_backend_worker() {
         .unwrap()
         .unwrap();
     assert_eq!(seen.load(Ordering::SeqCst), 1);
+}
+
+#[cfg(feature = "cron")]
+#[tokio::test]
+async fn every_second_worker_survives_three_second_tasks_at_single_concurrency() {
+    use miju_core::worker::{event::Event, ext::event_listener::EventListenerExt};
+    use std::str::FromStr;
+    let completed = Arc::new(AtomicUsize::new(0));
+    let observed = completed.clone();
+    let worker = WorkerBuilder::new("slow-cron-worker")
+        .backend(CronScheduler::new(
+            cron::Schedule::from_str("* * * * * *").unwrap(),
+        ))
+        .layer(tower::limit::ConcurrencyLimitLayer::new(1))
+        .on_event(move |ctx, event| {
+            if matches!(event, Event::Success(_))
+                && observed.fetch_add(1, Ordering::SeqCst) + 1 == 3
+            {
+                ctx.stop().unwrap();
+            }
+        })
+        .build(|_: Tick| async {
+            tokio::time::sleep(Duration::from_secs(3)).await;
+        });
+    tokio::time::timeout(Duration::from_secs(20), worker.run())
+        .await
+        .expect("worker should stop after three successful tasks")
+        .expect("consumer backpressure must not fail the worker");
+    assert_eq!(completed.load(Ordering::SeqCst), 3);
+}
+
+#[tokio::test]
+async fn overdue_tick_does_not_skip_future_or_invalid_tick() {
+    let future = now() + 2;
+    let (backend, calls) = finite([0, future, u64::MAX]);
+    let stream = backend.into_stream();
+    futures_util::pin_mut!(stream);
+    assert_eq!(stream.next().await.unwrap().unwrap().get_timestamp(), 0);
+    let mut cx = Context::from_waker(std::task::Waker::noop());
+    assert!(futures_util::Stream::poll_next(stream.as_mut(), &mut cx).is_pending());
+    let tick = tokio::time::timeout(Duration::from_secs(4), stream.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    assert_eq!(tick.get_timestamp(), future);
+    assert!(now() >= future);
+    for _ in 0..2 {
+        assert!(matches!(
+            stream.next().await,
+            Some(Err(Error::InvalidTimestamp { tick: u64::MAX }))
+        ));
+    }
+    assert_eq!(calls.load(Ordering::SeqCst), 3);
+}
+
+#[tokio::test]
+async fn overdue_finite_worker_drains_serially_and_reaches_eof() {
+    let (backend, _) = finite([0, 1, 2]);
+    let completed = Arc::new(AtomicUsize::new(0));
+    let active = Arc::new(AtomicUsize::new(0));
+    let observed = completed.clone();
+    let worker = WorkerBuilder::new("overdue-finite-worker")
+        .backend(backend)
+        .layer(tower::limit::ConcurrencyLimitLayer::new(1))
+        .build(move |tick: Tick| {
+            let observed = observed.clone();
+            let active = active.clone();
+            async move {
+                assert_eq!(active.fetch_add(1, Ordering::SeqCst), 0);
+                assert_eq!(tick.get_timestamp(), observed.load(Ordering::SeqCst) as u64);
+                tokio::time::sleep(Duration::from_millis(20)).await;
+                observed.fetch_add(1, Ordering::SeqCst);
+                active.fetch_sub(1, Ordering::SeqCst);
+            }
+        });
+    tokio::time::timeout(Duration::from_secs(3), worker.run())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(completed.load(Ordering::SeqCst), 3);
 }

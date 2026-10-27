@@ -3,7 +3,7 @@ use std::{
     future::Future,
     pin::Pin,
     task::{Context, Poll},
-    time::SystemTime,
+    time::{Duration, SystemTime},
 };
 
 use futures_util::Stream;
@@ -133,6 +133,9 @@ where
 
                 let duration = match next.signed_duration_since(now) {
                     Ok(d) => d,
+                    // Backpressure can delay polling past a prefetched tick's deadline.
+                    // Deliver it with its original timestamp instead of failing the Worker.
+                    Err(Error::OutOfRange { .. }) => Duration::ZERO,
                     Err(e) => {
                         tracing::warn!(
                             tick = ?next,
