@@ -32,6 +32,7 @@ async fn main() {
     let backend = CronScheduler::new(MyDailyRoutine).with_timezone(Local);
     let worker = WorkerBuilder::new("morning-cereal")
         .backend(backend)
+        .data(42usize)
         .build(handle_tick);
 
     worker.run().await.unwrap();
