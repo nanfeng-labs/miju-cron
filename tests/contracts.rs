@@ -95,3 +95,22 @@ fn timezone_preserves_dst_ambiguity_and_gap() {
         LocalResult::Ambiguous(_, _)
     ));
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn config_sequence_contract_and_errors() {
+    let decoded: Config<u32, i32> = serde_json::from_str(r#"["42","8"]"#).unwrap();
+    assert_eq!((*decoded.schedule(), *decoded.timezone()), (42, 8));
+    for (json, message) in [
+        ("[]", "invalid length 0"),
+        (r#"["42"]"#, "invalid length 1"),
+        (r#"["42","8","extra"]"#, "trailing characters"),
+        (r#"[42,"8"]"#, "invalid type"),
+        (r#"["42",8]"#, "invalid type"),
+        (r#"["bad","8"]"#, "invalid digit"),
+        (r#"["42","bad"]"#, "invalid digit"),
+    ] {
+        let error = serde_json::from_str::<Config<u32, i32>>(json).unwrap_err();
+        assert!(error.to_string().contains(message), "{json}: {error}");
+    }
+}

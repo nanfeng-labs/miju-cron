@@ -35,7 +35,7 @@ impl<Schedule, Timezone> Config<Schedule, Timezone> {
 
 #[cfg(feature = "serde")]
 mod encoding {
-    use serde::de::{self, Deserialize, Deserializer, MapAccess, Visitor};
+    use serde::de::{self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
     use serde::ser::SerializeStruct;
     use serde::{Serialize, Serializer};
     use std::fmt::{self, Display};
@@ -95,6 +95,21 @@ mod encoding {
 
                 fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                     formatter.write_str("struct Config")
+                }
+
+                fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
+                where
+                    V: SeqAccess<'de>,
+                {
+                    let schedule: String = seq
+                        .next_element()?
+                        .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                    let timezone: String = seq
+                        .next_element()?
+                        .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                    let schedule = Schedule::from_str(&schedule).map_err(de::Error::custom)?;
+                    let timezone = Tz::from_str(&timezone).map_err(de::Error::custom)?;
+                    Ok(Config { schedule, timezone })
                 }
 
                 fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>

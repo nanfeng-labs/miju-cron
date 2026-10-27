@@ -130,7 +130,7 @@ let backend = CronScheduler::new(routine).with_timezone(chrono::Local);
 # fn main() {}
 ```
 
-解析失败会返回错误。英文规则转换为 cron 表达式，并按当前时钟计算下次执行时间。Worker 集成见 [english](examples/english.rs)；调度、时区和中间件的序列化配置见 [config](examples/config.rs)。
+解析忽略大小写，并保留原始输入。多个时刻的分钟不同时（如 `at 9:30 and 11:45`）会返回错误，请为这些时刻分别创建规则。英文规则转换为 cron 表达式，并按当前时钟计算下次执行时间。Worker 集成见 [english](examples/english.rs)；调度、时区和中间件的序列化配置见 [config](examples/config.rs)。
 
 ### 将 tick 转交其他后端
 

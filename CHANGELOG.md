@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- fix: harden config decoding and English schedules ([#13](https://github.com/nanfeng-labs/miju-cron/pull/13))
 - docs(readme): improve spacing and remove redundant MSRV prose ([#12](https://github.com/nanfeng-labs/miju-cron/pull/12))
 - fix(examples): inject data into custom schedule worker ([#11](https://github.com/nanfeng-labs/miju-cron/pull/11))
 - fix(scheduler): deliver overdue ticks under backpressure ([#10](https://github.com/nanfeng-labs/miju-cron/pull/10))
