@@ -1,0 +1,59 @@
+name: cargo-audit
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "**/deny.toml"
+      - ".cargo/audit.toml"
+      - "supply-chain/**"
+      - ".github/workflows/audit.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "**/deny.toml"
+      - ".cargo/audit.toml"
+      - "supply-chain/**"
+      - ".github/workflows/audit.yaml"
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-audit:
+    name: cargo-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: install-cargo-audit
+        run: cargo install --locked cargo-audit --version 0.22.2
+      - run: cargo audit
+
+  cargo-vet:
+    name: cargo-vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: install-cargo-vet
+        run: cargo install cargo-vet --version 0.10.2 --locked
+      - run: cargo vet --locked --no-minimize-exemptions
+
+  cargo-deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: install-cargo-deny
+        run: cargo install --locked cargo-deny --version 0.20.2
+      - run: cargo deny --workspace --all-features --locked check
