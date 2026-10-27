@@ -168,4 +168,4 @@ See [miju](https://github.com/nanfeng-labs/miju) for Worker lifecycle, middlewar
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+Licensed under the [MIT License](https://github.com/nanfeng-labs/miju-cron/blob/main/LICENSE).

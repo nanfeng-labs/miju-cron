@@ -168,4 +168,4 @@ Worker 生命周期、中间件和任务处理概念可参阅 [miju 主仓库](h
 
 ## 许可证
 
-本项目采用 [MIT 许可证](LICENSE)。
+本项目采用 [MIT 许可证](https://github.com/nanfeng-labs/miju-cron/blob/main/LICENSE)。
