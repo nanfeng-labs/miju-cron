@@ -31,6 +31,7 @@
   <a href="README.md">English</a>
 </div>
 
+<br />
 
 miju-cron 将周期调度规则转换为 miju Worker 可以处理的类型化任务，适用于定期报表、提醒和维护任务，也可以直接以流的形式消费调度事件。
 
@@ -45,7 +46,7 @@ miju-cron 将周期调度规则转换为 miju Worker 可以处理的类型化任
 
 ## 安装
 
-下面的依赖用于后文的 cron Worker 示例。需要 Rust **1.89.0** 或更高版本。
+下面的依赖用于后文的 cron Worker 示例。
 
 ```toml
 [dependencies]

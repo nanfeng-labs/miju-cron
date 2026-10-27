@@ -31,6 +31,7 @@
   <a href="README.zh-CN.md">简体中文</a>
 </div>
 
+<br />
 
 miju-cron turns recurring schedules into typed tasks for miju Workers. Use it for periodic reports, reminders, and maintenance jobs, or consume scheduled ticks directly as a stream.
 
@@ -45,7 +46,7 @@ miju-cron turns recurring schedules into typed tasks for miju Workers. Use it fo
 
 ## Installation
 
-Add these dependencies for the cron Worker example below. Rust **1.89.0** or later is required.
+Add these dependencies for the cron Worker example below.
 
 ```toml
 [dependencies]
