@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- fix(examples): inject data into custom schedule worker ([#11](https://github.com/nanfeng-labs/miju-cron/pull/11))
 - fix(scheduler): deliver overdue ticks under backpressure ([#10](https://github.com/nanfeng-labs/miju-cron/pull/10))
 
 ## [0.1.1](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.1.1)
