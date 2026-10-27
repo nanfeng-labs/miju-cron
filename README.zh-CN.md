@@ -248,7 +248,7 @@ while let Some(tick) = ticks.next().await {
 | [config](examples/config.rs) | Worker、后端和中间件的配置序列化。 | `cargo run --locked --example config --features english,serde` |
 | [custom](examples/custom.rs) | 自定义本地时间的每日调度。 | `cargo run --locked --example custom --features chrono` |
 
-这些示例会持续调度任务，通常需要中断进程才能退出。`basic` 使用 `@daily`，不会立即产生 tick。`custom` 示例目前请求 `Data<usize>`，但没有向 Worker 注入该数据，因此 tick 到达后，处理器会因参数提取失败而报错。
+这些示例会持续调度任务，通常需要中断进程才能退出。`basic` 使用 `@daily`，不会立即产生 tick。
 
 在本地构建 API 文档：
 

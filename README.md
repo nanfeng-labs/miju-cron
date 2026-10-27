@@ -248,7 +248,7 @@ Run these commands from the repository root:
 | [config](examples/config.rs) | Serialized Worker, backend, and middleware configuration. | `cargo run --locked --example config --features english,serde` |
 | [custom](examples/custom.rs) | A custom local-time daily schedule. | `cargo run --locked --example custom --features chrono` |
 
-The examples schedule recurring work and normally continue until interrupted. `basic` uses `@daily`, so it does not produce an immediate tick. The `custom` example currently requests `Data<usize>` without injecting it into the Worker; its handler fails argument extraction when a tick arrives.
+The examples schedule recurring work and normally continue until interrupted. `basic` uses `@daily`, so it does not produce an immediate tick.
 
 Build the API documentation locally:
 
