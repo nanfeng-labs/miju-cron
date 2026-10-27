@@ -31,83 +31,211 @@
   <a href="README.zh-CN.md">简体中文</a>
 </div>
 
+
+miju-cron turns recurring schedules into typed tasks for miju Workers. Use it for periodic reports, reminders, and maintenance jobs, or consume scheduled ticks directly as a stream.
+
 ## Features
 
-- **Multiple schedule formats**: cron expressions, English routines, a fluent builder, and jiff schedules.
-- **Typed ticks and timezones**: pass `Tick<Tz>` to handlers and use Chrono or jiff timezone support where the selected adapter supports it.
-- **Custom schedules**: implement `Schedule<Tz>` to choose when the next task should run.
-- **Worker integration**: combine scheduled tasks with miju's shared data, retries, and middleware.
-- **Direct tick streams**: use `into_stream()` to consume scheduled ticks without a Worker.
-- **Optional serialization**: encode schedule configuration and ticks with Serde.
+- **Scheduling formats**: cron expressions, English routines, a fluent builder, and Jiff schedules.
+- **Timezones**: choose UTC, local time, or a named timezone supported by the adapter.
+- **Worker middleware**: combine schedules with retries, shared data, and execution limits from miju.
+- **Backend composition**: forward emitted tasks to a storage backend with `pipe_to`.
+- **Custom schedules**: implement `Schedule<Tz>` for your own timing rules or finite sequences.
+- **Configuration**: serialize ticks and compatible schedule configurations with Serde.
 
 ## Installation
 
-Use the current source from this repository with the published miju dependencies:
+Add these dependencies for the cron Worker example below. Rust **1.89.0** or later is required.
 
 ```toml
 [dependencies]
-miju-cron = { git = "https://github.com/nanfeng-labs/miju-cron.git", branch = "main" }
+miju-cron = "0.1.1"
 miju = "0.1.1"
 cron = "0.17"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-The quick start imports `cron::Schedule`, so `cron` is an explicit application dependency. Commit your application's `Cargo.lock` to retain the resolved Git revision.
+`cron` is explicit because the example imports `cron::Schedule`. The default miju-cron features are `cron` and `serde`.
 
-The minimum supported Rust version is **1.89.0**. CI checks the complete feature set with Rust 1.89.0.
+## Usage
 
-## Quick start
+### Cron expressions and middleware
 
-Run a handler every ten seconds, using a six-field cron expression with seconds first:
+This Worker handles a tick every ten seconds. The six-field cron expression starts with seconds; `Data<String>` receives the value registered with `.data(...)`.
 
 ```rust,no_run
 # #[cfg(feature = "cron")]
 # mod example {
 use cron::Schedule;
-use miju::prelude::*;
+use miju::{layers::retry::RetryPolicy, prelude::*};
 use miju_cron::{CronScheduler, Tick};
 use std::str::FromStr;
 
-async fn handle_tick(tick: Tick) {
-    println!("Scheduled timestamp: {}", tick.get_timestamp());
+async fn report(tick: Tick, name: Data<String>) {
+    println!("{}: scheduled at {}", name.as_str(), tick.get_timestamp());
 }
 
 #[tokio::main]
 async fn main() -> Result<(), BoxDynError> {
     let schedule = Schedule::from_str("*/10 * * * * *")?;
-
-    WorkerBuilder::new("recurring-task")
+    WorkerBuilder::new("periodic-report")
         .backend(CronScheduler::new(schedule))
-        .build(handle_tick)
+        .retry(RetryPolicy::retries(3))
+        .data(String::from("daily-summary"))
+        .build(report)
         .run()
         .await?;
-
     Ok(())
 }
 # }
 ```
 
-This is a recurring Worker: `run()` waits until the Worker stops. Interrupt the process to end this minimal example; applications can request shutdown through `WorkerContext::stop()`.
+`run()` waits until the Worker stops. Interrupt this example to exit, or use `WorkerContext::stop()` in an application. The retry policy applies when a handler returns an error; the simple handler above always succeeds. See [basic](examples/basic.rs) for another shared-data example.
 
-For retries and shared handler data, see [`examples/basic.rs`](examples/basic.rs).
+### Fluent schedules and timezones
+
+Enable `builder` with `miju-cron = { version = "0.1.1", features = ["builder"] }`. For this example, also add `chrono = "0.4"` and `chrono-tz = "0.10"`.
+
+```rust
+# #[cfg(feature = "builder")]
+# {
+use miju_cron::{CronScheduler, builder::schedule};
+
+let every_five_minutes = schedule().every(5).minutes().build::<chrono::Utc>();
+let monday_morning = schedule().each().monday().at("09:30").build::<chrono_tz::Tz>();
+let backend = CronScheduler::new(monday_morning)
+    .with_timezone(chrono_tz::Asia::Shanghai);
+# }
+```
+
+Pass `backend` to `.backend(...)` on a Worker builder. Its handler receives `Tick<chrono_tz::Tz>`. `every(5).minutes()` advances by five minutes; weekday selectors such as `.monday()` select weekly scheduling automatically. See [timezone](examples/timezone.rs) for a complete Worker using local time.
+
+Minute/hour schedules without `.at(...)` measure elapsed time. Day/week schedules preserve local wall time. Zero intervals, invalid times, date overflow, and ambiguous or nonexistent DST times end a builder schedule with `None`; choose an adapter whose DST policy fits your application. `at` accepts `:SS`, `HH:MM`, and `HH:MM:SS`, using the fields relevant to the selected unit.
+
+### English routines
+
+Enable the `english` feature and add `chrono = "0.4"` to use local time:
+
+```rust
+# #[cfg(feature = "english")]
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+use miju_cron::{CronScheduler, english::EnglishRoutine};
+
+let routine = EnglishRoutine::new("every 5 minutes")?;
+let backend = CronScheduler::new(routine).with_timezone(chrono::Local);
+# Ok(())
+# }
+# #[cfg(not(feature = "english"))]
+# fn main() {}
+```
+
+Parsing failures are returned to the caller. English routines are converted to cron expressions, and their next occurrence is computed from the current clock. See [english](examples/english.rs) for Worker integration and [config](examples/config.rs) for a serialized schedule, timezone, and middleware configuration.
+
+### Forwarding ticks to another backend
+
+The scheduler itself is ephemeral. `pipe_to` lets another backend accept the tasks it emits. Add `miju-core = "0.1.1"` and `miju-file-storage = "0.1.1"` for this example:
+
+```rust,no_run
+# #[cfg(all(feature = "cron", feature = "serde"))]
+# mod example {
+use cron::Schedule;
+use miju::prelude::*;
+use miju_core::backend::ext::BackendExt;
+use miju_cron::{CronScheduler, Tick};
+use miju_file_storage::JsonStorage;
+use std::str::FromStr;
+
+#[tokio::main]
+async fn main() -> Result<(), BoxDynError> {
+    let schedule = Schedule::from_str("*/10 * * * * *")?;
+    let storage = JsonStorage::new_temp()?;
+    let backend = CronScheduler::new(schedule).pipe_to(storage);
+    WorkerBuilder::new("file-backed-report")
+        .backend(backend)
+        .build(async |tick: Tick| {
+            println!("Received {}", tick.get_timestamp());
+        })
+        .run()
+        .await?;
+    Ok(())
+}
+# }
+```
+
+`new_temp()` creates temporary storage for demonstration. Only tasks delivered to the destination receive its storage guarantees; review the file backend's persistence and concurrency contract before using it in an application. This does not persist schedule rules, replay downtime, elect a leader, or provide exactly-once execution.
+
+### Custom schedules
+
+Implement `Schedule<Tz>` to return the next UTC UNIX timestamp in seconds. Return `None` when there are no more occurrences. This schedule emits two ticks:
+
+```rust
+use miju_cron::{CronScheduler, Schedule, Tick, timezone::Utc};
+use std::collections::VecDeque;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+#[derive(Debug)]
+struct Occurrences(VecDeque<u64>);
+
+impl Schedule<Utc> for Occurrences {
+    fn next_tick(&mut self, _: &Utc) -> Option<Tick<Utc>> {
+        self.0.pop_front().map(Tick::new)
+    }
+}
+
+let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+let schedule = Occurrences(VecDeque::from([now + 10, now + 20]));
+let backend = CronScheduler::new(schedule);
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+A Worker consuming a finite schedule can shut down after exhaustion with miju 0.1.1. Custom implementations must return valid future timestamps and decide how to handle timezone transitions and missed occurrences.
+
+### Using a tick stream
+
+Add `futures-util = "0.3"` to consume ticks without a Worker:
+
+```rust,no_run
+# #[cfg(feature = "cron")]
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+use cron::Schedule;
+use futures_util::{StreamExt, pin_mut};
+use miju_cron::CronScheduler;
+use std::str::FromStr;
+
+let ticks = CronScheduler::new(Schedule::from_str("*/10 * * * * *")?).into_stream();
+pin_mut!(ticks);
+while let Some(tick) = ticks.next().await {
+    println!("Scheduled at {}", tick?.get_timestamp());
+}
+# Ok(())
+# }
+```
 
 ## Feature flags
 
-The default features are `cron` and `serde`.
-
-| Feature | Provides | Enabled by default |
+| Feature | Capability | Default |
 | --- | --- | :---: |
 | `cron` | `cron::Schedule` adapter; enables `chrono`. | Yes |
 | `serde` | Serialization for `Tick` and `Config`. | Yes |
 | `chrono` | Chrono and chrono-tz timezone support. | Via `cron` |
-| `english` | `EnglishRoutine` for English scheduling expressions; enables `chrono`. | No |
-| `builder` | Fluent schedule construction; enables `chrono`. See scheduling and DST behavior below. | No |
-| `jiff` | `JiffSchedule` and jiff timezone support. | No |
-| `docsrs` | Generated feature reference in the API documentation. | No |
+| `builder` | Fluent schedule construction; enables `chrono`. | No |
+| `english` | English scheduling expressions; enables `chrono`. | No |
+| `jiff` | `JiffSchedule` and Jiff timezone support. | No |
+| `docsrs` | Generated feature reference in API documentation. | No |
 
-With `default-features = false`, the scheduler and custom `Schedule<Tz>` implementations remain available. Without `chrono`, `timezone::Utc` is a lightweight marker.
+With `default-features = false`, the scheduler and custom schedules remain available. Without `chrono`, `timezone::Utc` is a lightweight marker.
 
-## Examples
+## Scheduling behavior
+
+`CronScheduler` caches a tick, waits until it is due, emits a task, and prefetches the next occurrence. Each task carries a timestamp-derived ULID. Cron and English adapters use the current clock; the builder advances from its previous tick. Timers use real elapsed time rather than Tokio's paused clock.
+
+- `Tick<Tz>` stores a UTC UNIX timestamp in seconds; the timezone type describes how the schedule is interpreted.
+- `Config<S, Tz>` holds a schedule and timezone. Serde stores these as strings; tick serialization contains `timestamp` and `_marker`.
+- Unrepresentable timestamps return `InvalidTimestamp`. A tick already expired before timer creation returns `OutOfRange`. Both remain cached, so repeated polling returns the error without advancing the schedule.
+- A timer created before its deadline can still emit the task when polled late. Cloning or changing the timezone clears the timer and cached tick, retaining the schedule's advanced state.
+- `poll_close` acknowledges immediately without resetting the scheduler; dropping it cancels its timer.
+
+## Examples and documentation
 
 Run these commands from the repository root:
 
@@ -122,49 +250,13 @@ Run these commands from the repository root:
 
 The examples schedule recurring work and normally continue until interrupted. `basic` uses `@daily`, so it does not produce an immediate tick. The `custom` example currently requests `Data<usize>` without injecting it into the Worker; its handler fails argument extraction when a tick arrives.
 
-## How scheduling works
-
-`Schedule<Tz>` calculates the next occurrence. `CronScheduler` caches that tick and waits until it is due. When polled after the timer completes, it emits a task with a timestamp-derived ULID and prefetches the following tick. The Worker then runs the handler through its configured middleware.
-
-| Type | Responsibility |
-| --- | --- |
-| `Schedule<Tz>` | Return the next `Tick<Tz>`, or `None` when the schedule is exhausted. |
-| `Tick<Tz>` | Hold a UTC UNIX timestamp in seconds; `Tz` describes the schedule's timezone type. |
-| `CronScheduler<S, Tz>` | Adapt a schedule into a miju task source or a stream of ticks. |
-| `Config<S, Tz>` | Hold the schedule and timezone; serialize them as strings when Serde is enabled. |
-
-Cron and English adapters calculate upcoming occurrences from the current clock. The builder retains its previous tick. The timer is runtime-independent: Tokio's paused clock does not advance it. Tick serialization contains `timestamp` and `_marker`.
-
-### Persistence and composition
-
-`CronScheduler` is an ephemeral backend. Use `pipe_to` to forward emitted tasks to another backend, as shown in [the file-backend integration test](tests/backend.rs). Only tasks already delivered to that backend can benefit from its storage guarantees.
-
-The scheduler does not persist schedule rules, replay missed occurrences after downtime, elect a leader, or guarantee exactly-once execution. SQLite persistence and workflow examples are not included in this repository.
-
-### Errors and lifecycle
-
-- **Invalid timestamps**: a tick outside the platform's `SystemTime` range returns `InvalidTimestamp` when polled. It remains cached, so repeated polling returns the same error without advancing the schedule.
-- **Expired ticks**: a tick already in the past before timer creation returns `OutOfRange` and remains cached. A timer that was created earlier can still yield its task after the scheduled time.
-- **Close and clone**: `poll_close` acknowledges immediately without resetting the scheduler. Dropping the scheduler cancels its timer. Cloning or replacing the timezone clears the cached tick and timer while preserving the schedule's current state.
-- **Worker EOF**: with miju-core 0.1.1, a Worker consuming a finite schedule completes shutdown after the stream ends. The automatic-completion regression test covers this behavior.
-
-### Builder scheduling
-
-The builder uses the timezone passed to `next_tick`, including the timezone selected with `CronScheduler::with_timezone`. `every(n).minutes()` advances by `n` minutes. With `.at(":17")`, the first tick aligns to an upcoming second 17 and subsequent ticks advance by `n` local minutes. Minute/hour intervals without `at` use elapsed time; day/week schedules preserve local wall time across offset changes.
-
-Weekday methods such as `.monday()` select weekly scheduling automatically, replacing any previously selected unit while retaining the interval. `.each().monday()` therefore works without `.week()`.
-
-Zero intervals, invalid `at` strings, date overflow, and ambiguous or nonexistent local times during daylight-saving transitions return `None`. The builder does not silently choose one occurrence of a repeated local time or move a missing local time forward. For a Worker, `None` means the schedule has ended; choose a cron adapter if you need its different DST handling. Valid `at` forms are `:SS`, `HH:MM`, and `HH:MM:SS`; minute schedules use seconds, hour schedules use minutes and seconds, and day/week schedules use the full time.
-
-## API documentation
-
-Build the API reference locally:
+Build the API documentation locally:
 
 ```sh
 cargo doc --locked --all-features --no-deps --open
 ```
 
-See [miju](https://github.com/nanfeng-labs/miju) for Worker lifecycle, middleware, and task-processing concepts.
+See [miju](https://github.com/nanfeng-labs/miju) for Worker lifecycle and middleware.
 
 ## License
 

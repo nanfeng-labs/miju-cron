@@ -2,12 +2,16 @@
 
 ## [Unreleased]
 
-- ci(release): add MIT license and align publishing workflow ([#8](https://github.com/nanfeng-labs/miju-cron/pull/8))
-- fix(deps): update miju ecosystem to 0.1.1 ([#7](https://github.com/nanfeng-labs/miju-cron/pull/7))
-- fix(builder): honor timezones and scheduling intervals ([#6](https://github.com/nanfeng-labs/miju-cron/pull/6))
-- chore(assets): add social preview SVG source ([#5](https://github.com/nanfeng-labs/miju-cron/pull/5))
-- docs(cron): refresh README and add Chinese guide ([#4](https://github.com/nanfeng-labs/miju-cron/pull/4))
-- fix(cron): reject unrepresentable tick timestamps ([#3](https://github.com/nanfeng-labs/miju-cron/pull/3))
-- feat(cron): add recurring task scheduler ([#2](https://github.com/nanfeng-labs/miju-cron/pull/2))
-- chore: add issue templates ([#1](https://github.com/nanfeng-labs/miju-cron/pull/1))
-- Configure pull request checks and changelog automation.
+## [0.1.1](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.1.1)
+
+### Scheduling
+
+- Provide typed recurring tasks, cron and English expressions, a fluent builder, Jiff integration, custom schedules, and direct tick streams ([#2](https://github.com/nanfeng-labs/miju-cron/pull/2)).
+- Respect builder timezones and intervals, infer weekly scheduling from weekday selectors, and reject invalid times and date overflow ([#6](https://github.com/nanfeng-labs/miju-cron/pull/6)).
+- Return `InvalidTimestamp` instead of panicking for timestamps outside the platform range ([#3](https://github.com/nanfeng-labs/miju-cron/pull/3)).
+
+### Integration and documentation
+
+- Require the miju 0.1.1 ecosystem, allowing Workers to finish after finite schedules are exhausted; document exact-version temporary dependency-vetting exemptions ([#7](https://github.com/nanfeng-labs/miju-cron/pull/7)).
+- Add English and Chinese guides, header artwork, and social preview assets ([#4](https://github.com/nanfeng-labs/miju-cron/pull/4), [#5](https://github.com/nanfeng-labs/miju-cron/pull/5)). Expand the guides with scheduling, middleware, backend composition, and custom-schedule examples.
+- Include the MIT license, reusable CI and supply-chain checks, and tag-triggered crates.io publishing ([#8](https://github.com/nanfeng-labs/miju-cron/pull/8)).
