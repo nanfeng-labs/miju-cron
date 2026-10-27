@@ -9,9 +9,8 @@ pub enum Error {
         /// The unsupported UNIX timestamp in seconds.
         tick: u64,
     },
-    /// The cron scheduler might not always be polled consistently, such as when the worker is blocked.
-    /// If polling is delayed, some ticks may be skipped. When this occurs, an out-of-range error is triggered
-    /// because the missed tick is now in the past.
+    /// The tick precedes the reference time used to calculate its duration.
+    /// Scheduler polling treats this as an already-due tick and delivers it late.
     #[error("Tick out of range for {tick:?} (past duration:  {duration:?})")]
     OutOfRange {
         /// The past duration

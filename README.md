@@ -188,7 +188,7 @@ let backend = CronScheduler::new(schedule);
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-A Worker consuming a finite schedule can shut down after exhaustion with miju 0.1.1. Custom implementations must return valid future timestamps and decide how to handle timezone transitions and missed occurrences.
+A Worker consuming a finite schedule can shut down after exhaustion with miju 0.1.1. Custom implementations must return valid timestamps and decide how to handle timezone transitions and missed occurrences.
 
 ### Using a tick stream
 
@@ -231,7 +231,7 @@ With `default-features = false`, the scheduler and custom schedules remain avail
 
 - `Tick<Tz>` stores a UTC UNIX timestamp in seconds; the timezone type describes how the schedule is interpreted.
 - `Config<S, Tz>` holds a schedule and timezone. Serde stores these as strings; tick serialization contains `timestamp` and `_marker`.
-- Unrepresentable timestamps return `InvalidTimestamp`. A tick already expired before timer creation returns `OutOfRange`. Both remain cached, so repeated polling returns the error without advancing the schedule.
+- Unrepresentable timestamps return `InvalidTimestamp` and remain cached, so repeated polling returns the error without advancing the schedule. Valid ticks that are already due are delivered late with their original timestamp and task ID, including ticks prefetched before consumer backpressure. This does not reconstruct occurrences omitted by the schedule adapter.
 - A timer created before its deadline can still emit the task when polled late. Cloning or changing the timezone clears the timer and cached tick, retaining the schedule's advanced state.
 - `poll_close` acknowledges immediately without resetting the scheduler; dropping it cancels its timer.
 
