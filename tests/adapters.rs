@@ -60,6 +60,116 @@ fn english_preserves_input_errors_and_tick_contract() {
     assert!(EnglishRoutine::try_from(String::from("every second")).is_ok());
 }
 
+#[cfg(feature = "english")]
+#[test]
+fn english_is_case_insensitive_and_preserves_original_input() {
+    use chrono::{TimeZone, Utc};
+    use miju_cron::english::EnglishRoutine;
+    let anchor = Utc.with_ymd_and_hms(2027, 1, 5, 10, 0, 1).unwrap();
+    for (input, expected) in [
+        ("EVERY SECOND", anchor + chrono::Duration::seconds(1)),
+        (
+            "Every Hour",
+            Utc.with_ymd_and_hms(2027, 1, 5, 11, 0, 0).unwrap(),
+        ),
+        (
+            "every day at NOON",
+            Utc.with_ymd_and_hms(2027, 1, 5, 12, 0, 0).unwrap(),
+        ),
+        (
+            "every day at Midnight",
+            Utc.with_ymd_and_hms(2027, 1, 6, 0, 0, 0).unwrap(),
+        ),
+    ] {
+        for routine in [
+            EnglishRoutine::new(input).unwrap(),
+            input.parse::<EnglishRoutine>().unwrap(),
+            EnglishRoutine::try_from(input.to_string()).unwrap(),
+        ] {
+            assert_eq!(routine.input(), input);
+            assert_eq!(
+                routine.schedule().after(&anchor).next(),
+                Some(expected),
+                "{input}"
+            );
+        }
+    }
+}
+
+#[cfg(feature = "english")]
+#[test]
+fn english_rejects_clock_times_with_different_minutes() {
+    use miju_cron::english::{EnglishRoutine, EnglishRoutineError};
+    for input in [
+        "at 10:00 and 10:30",
+        "at 9:30 and 11:45",
+        "AT 9:30PM AND 11:45PM",
+        "at 9:30am,11:45am",
+        "at 9:30 am and 11pm",
+        "at 9pm and 11:45",
+        "between 9:30 and 11:45",
+        "at noon and 9:30",
+        "at midnight and 0:30",
+        "at9:30and11:45",
+        "🦀 提醒：at 9:30 and 11:45",
+    ] {
+        let error = EnglishRoutine::new(input).unwrap_err();
+        assert!(
+            matches!(error, EnglishRoutineError::InvalidStatement(_)),
+            "{input}: {error:?}"
+        );
+        assert!(
+            error.to_string().contains("different minutes"),
+            "{input}: {error}"
+        );
+    }
+}
+
+#[cfg(feature = "english")]
+#[test]
+fn english_keeps_supported_clock_time_combinations() {
+    use chrono::{TimeZone, Utc};
+    use miju_cron::english::EnglishRoutine;
+    let anchor = Utc.with_ymd_and_hms(2027, 1, 5, 9, 30, 1).unwrap();
+    for (input, expected) in [
+        (
+            "at 9:30 and 11:30",
+            Utc.with_ymd_and_hms(2027, 1, 5, 11, 30, 0).unwrap(),
+        ),
+        (
+            "🦀 at 9:030 and 11:30",
+            Utc.with_ymd_and_hms(2027, 1, 5, 11, 30, 0).unwrap(),
+        ),
+        (
+            "at 9am and 11am",
+            Utc.with_ymd_and_hms(2027, 1, 5, 11, 0, 0).unwrap(),
+        ),
+        (
+            "at 9:00 and 11am",
+            Utc.with_ymd_and_hms(2027, 1, 5, 11, 0, 0).unwrap(),
+        ),
+        (
+            "at noon and midnight",
+            Utc.with_ymd_and_hms(2027, 1, 5, 12, 0, 0).unwrap(),
+        ),
+        (
+            "at 9:30 on Monday and Wednesday",
+            Utc.with_ymd_and_hms(2027, 1, 6, 9, 30, 0).unwrap(),
+        ),
+        (
+            "Run at midnight on the 1st and 15th of the month",
+            Utc.with_ymd_and_hms(2027, 1, 15, 0, 0, 0).unwrap(),
+        ),
+    ] {
+        let routine = EnglishRoutine::new(input).unwrap();
+        assert_eq!(
+            routine.schedule().after(&anchor).next(),
+            Some(expected),
+            "{input}"
+        );
+    }
+}
+
 #[cfg(feature = "jiff")]
 #[test]
 fn jiff_schedule_reexport_and_seconds() {

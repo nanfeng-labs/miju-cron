@@ -130,7 +130,7 @@ let backend = CronScheduler::new(routine).with_timezone(chrono::Local);
 # fn main() {}
 ```
 
-Parsing failures are returned to the caller. English routines are converted to cron expressions, and their next occurrence is computed from the current clock. See [english](examples/english.rs) for Worker integration and [config](examples/config.rs) for a serialized schedule, timezone, and middleware configuration.
+Parsing is case-insensitive and preserves the original input. Multiple clock times with different minutes (for example, `at 9:30 and 11:45`) return an error; use separate routines for these times. English routines are converted to cron expressions, and their next occurrence is computed from the current clock. See [english](examples/english.rs) for Worker integration and [config](examples/config.rs) for a serialized schedule, timezone, and middleware configuration.
 
 ### Forwarding ticks to another backend
 

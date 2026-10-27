@@ -13,6 +13,9 @@ pub struct EnglishRoutine {
 
 impl EnglishRoutine {
     /// Creates a new `EnglishRoutine` from the given input string.
+    ///
+    /// Parsing is case-insensitive. Multiple clock times with different minutes
+    /// are rejected because the upstream parser cannot represent them accurately.
     pub fn new<S: Into<Cow<'static, str>>>(s: S) -> Result<Self, EnglishRoutineError> {
         Self::try_from(s.into())
     }
@@ -55,12 +58,61 @@ impl TryFrom<Cow<'_, str>> for EnglishRoutine {
     type Error = EnglishRoutineError;
 
     fn try_from(s: Cow<'_, str>) -> Result<Self, Self::Error> {
-        let cron = Cron::from_str(&s)?;
+        let normalized = s.to_ascii_lowercase();
+        let cron = Cron::from_str(&normalized)?;
+        if has_conflicting_clock_minutes(&normalized) {
+            return Err(english_to_cron::Error::IncorrectValue {
+                state: "clock_time".into(),
+                error: "Clock times with different minutes require separate routines".into(),
+            }
+            .into());
+        }
         Ok(EnglishRoutine {
             schedule: TryFrom::try_from(cron.to_string())?,
             input: s.to_string(),
         })
     }
+}
+
+fn has_conflicting_clock_minutes(input: &str) -> bool {
+    let bytes = input.as_bytes();
+    let mut pos = 0;
+    let mut minute = None;
+    while pos < bytes.len() {
+        let current = if bytes[pos].is_ascii_digit() {
+            while pos < bytes.len() && bytes[pos].is_ascii_digit() {
+                pos += 1;
+            }
+            if bytes.get(pos) == Some(&b':') {
+                pos += 1;
+                let start = pos;
+                while pos < bytes.len() && bytes[pos].is_ascii_digit() {
+                    pos += 1;
+                }
+                input[start..pos].parse::<u32>().ok()
+            } else {
+                let suffix = bytes[pos..].strip_prefix(b" ").unwrap_or(&bytes[pos..]);
+                (suffix.starts_with(b"am") || suffix.starts_with(b"pm")).then_some(0)
+            }
+        } else if bytes[pos..].starts_with(b"noon") {
+            pos += 4;
+            Some(0)
+        } else if bytes[pos..].starts_with(b"midnight") {
+            pos += 8;
+            Some(0)
+        } else {
+            pos += 1;
+            continue;
+        };
+        // The upstream parser retains only one minute field across clock times.
+        if let Some(current) = current {
+            if minute.is_some_and(|previous| previous != current) {
+                return true;
+            }
+            minute = Some(current);
+        }
+    }
+    false
 }
 
 /// Errors that can occur while parsing or using an English routine
