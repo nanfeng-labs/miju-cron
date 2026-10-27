@@ -30,3 +30,14 @@ Brief description of what this PR does.
 ## Additional Notes
 
 Any additional information, context, or screenshots about the pull request here.
+
+## Release PRs
+
+For `bump: to vX.Y.Z` PRs:
+
+- [ ] Update the package version in `Cargo.toml` and `Cargo.lock`, and synchronize versioned installation examples.
+- [ ] Summarize the release in `CHANGELOG.md` under `## [X.Y.Z](https://github.com/nanfeng-labs/miju-cron/releases/tag/vX.Y.Z)`, retaining `## [Unreleased]` and prior releases.
+- [ ] Place this PR's generated changelog entry under that release section; reruns preserve its location.
+- [ ] Verify `cargo publish --dry-run --locked --registry crates-io -p miju-cron` and inspect the package contents, including `LICENSE`.
+
+Merging a release PR does not publish the crate. After merging and configuring the repository secret `CARGO_REGISTRY_TOKEN`, push the matching `vX.Y.Z` tag at the release commit. The CD workflow runs CI and supply-chain checks before publication.
