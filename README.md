@@ -165,3 +165,7 @@ cargo doc --locked --all-features --no-deps --open
 ```
 
 See [miju](https://github.com/nanfeng-labs/miju) for Worker lifecycle, middleware, and task-processing concepts.
+
+## License
+
+Licensed under the [MIT License](LICENSE).

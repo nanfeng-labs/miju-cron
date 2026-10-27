@@ -165,3 +165,7 @@ cargo doc --locked --all-features --no-deps --open
 ```
 
 Worker 生命周期、中间件和任务处理概念可参阅 [miju 主仓库](https://github.com/nanfeng-labs/miju)。
+
+## 许可证
+
+本项目采用 [MIT 许可证](LICENSE)。
