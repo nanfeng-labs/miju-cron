@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- docs: fix README links and improve reading flow ([#15](https://github.com/nanfeng-labs/miju-cron/pull/15))
 - docs(readme): explain scheduler architecture and tick lifecycle ([#14](https://github.com/nanfeng-labs/miju-cron/pull/14))
 - fix: harden config decoding and English schedules ([#13](https://github.com/nanfeng-labs/miju-cron/pull/13))
 - docs(readme): improve spacing and remove redundant MSRV prose ([#12](https://github.com/nanfeng-labs/miju-cron/pull/12))
