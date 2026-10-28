@@ -44,6 +44,62 @@ miju-cron 将周期调度规则转换为 miju Worker 可以处理的类型化任
 - **自定义规则**：实现 `Schedule<Tz>`，定义自己的时间规则或有限事件序列。
 - **配置序列化**：使用 Serde 序列化 tick 和支持该能力的调度配置。
 
+## 核心架构
+
+各适配器通过 `Schedule<Tz>` 计算下一个 tick。`Config<S, Tz>` 将调度规则和时区组合在一起；消费者轮询 `CronScheduler` 时，调度器将这些 tick 转换为任务。
+
+```mermaid
+flowchart LR
+    subgraph config["Config&lt;S, Tz&gt;"]
+        direction TB
+        schedule["Schedule&lt;Tz&gt;<br/>cron / 英文规则 / builder<br/>Jiff / 自定义规则"]
+        timezone["时区：Tz"]
+    end
+    config --> scheduler["CronScheduler&lt;S, Tz&gt;<br/>缓存 tick · 等待到期<br/>构建 Task&lt;Tick&lt;Tz&gt;&gt;"]
+    subgraph paths["选择一种消费方式"]
+        stream["你的异步循环<br/>Result&lt;Tick&lt;Tz&gt;, Error&gt;"]
+        storage[("目标后端")]
+        worker["miju Worker<br/>中间件 → 处理器"]
+        storage --> worker
+    end
+    scheduler -->|"into_stream()"| stream
+    scheduler -->|"pipe_to(storage)"| storage
+    scheduler -->|"直接消费"| worker
+```
+
+<details>
+<summary>ASCII 版本（适用于不支持 Mermaid 的阅读器）</summary>
+
+```text
+cron / English / builder / Jiff / custom
+                    |
+                    v
+              Schedule<Tz> <--- timezone: Tz
+                    |
+             Option<Tick<Tz>>
+                    |
+                    v
+       +---------------------------+
+       | CronScheduler<S, Tz>      |
+       | Cache one tick + timer    |
+       | Wait, then create a task  |
+       +---------------------------+
+                    |
+                    v
+              Task<Tick<Tz>>
+
+Choose one consumption path:
+  CronScheduler -----------------> miju Worker -> handler
+  CronScheduler.into_stream() ----> your async loop
+  CronScheduler.pipe_to(storage) -> storage -> miju Worker -> handler
+```
+
+</details>
+
+Worker 在调用处理器前，通过配置的中间件提供重试、共享数据和执行限制。`into_stream()` 复用相同的调度路径，向异步循环提供 `Result<Tick<Tz>, Error>`。使用 `pipe_to` 时，产生的任务先交给目标后端，再由该后端提供给 Worker；存储保证由目标后端决定。
+
+图中列出的是三种可选消费方式。调度器由轮询驱动，仅构造它不会启动后台任务或执行处理器。图中的缓存是一个 tick 和它的定时器。
+
 ## 安装
 
 下面的依赖用于后文的 cron Worker 示例。
@@ -228,11 +284,51 @@ while let Some(tick) = ticks.next().await {
 
 ## 调度行为
 
-`CronScheduler` 缓存一个 tick，等待到期后产生任务，并预取下一个执行时间。任务使用由时间戳生成的 ULID。Cron 和英文适配器依据当前时钟计算，builder 则从前一个 tick 继续推进。定时器依赖真实经过时间，不受 Tokio 暂停时钟驱动。
+消费者轮询 `CronScheduler` 时会执行以下流程。定时器未就绪时注册唤醒，下次轮询继续使用缓存的 tick 和定时器。
+
+```mermaid
+flowchart LR
+    tick["1. 使用缓存 tick<br/>或 next_tick(&timezone)"] -->|"Some(tick)"| timer["2. 创建或复用定时器<br/>已经到期：等待时间为零"]
+    timer -->|"就绪"| prefetch["3. 取出 tick，清除定时器<br/>预取下一个 tick<br/>（尚未创建定时器）"]
+    prefetch --> task["4. 构建并返回<br/>当前 Task&lt;Tick&lt;Tz&gt;&gt;"]
+    tick -->|"None"| exhausted["Ready(None)"]
+    timer -->|"时间戳无法表示"| error["返回 InvalidTimestamp<br/>保留缓存 tick"]
+    timer -->|"未就绪"| pending["返回 Pending<br/>保留 tick 和定时器"]
+    pending -.->|"唤醒后由消费者再次轮询"| tick
+```
+
+<details>
+<summary>ASCII 版本（适用于不支持 Mermaid 的阅读器）</summary>
+
+```text
+Use cached tick, or call Schedule::next_tick(&timezone)
+    |
+    +-- None ---------------------------> Ready(None)
+    |
+    v
+Create or reuse the timer for this tick
+(already due: use zero delay)
+    |
+    +-- invalid timestamp --------------> Error; keep cached tick
+    +-- timer pending ------------------> Pending; resume on wake
+    |
+    v
+Take current tick; clear timer
+    |
+    v
+Prefetch next tick (no timer for it yet)
+    |
+    v
+Build and return Task<Tick<Tz>>
+```
+
+</details>
+
+流程依次为取出或计算 tick、等待到期、清除当前缓存与定时器、预取下一个 tick，最后构建并返回当前任务。预取发生在当前任务返回之前，无需等待处理器完成。每个任务的 ULID 时间部分取自计划时间戳。Cron、英文和 Jiff 适配器依据当前时钟计算下一次事件；builder 首次依据当前时钟，后续从前一个 tick 继续推进；自定义规则自行定义推进方式。定时器依赖真实经过时间，不受 Tokio 暂停时钟驱动。
 
 - `Tick<Tz>` 保存以秒为单位的 UTC UNIX 时间戳；时区类型描述调度规则如何解释时间。
 - `Config<S, Tz>` 保存调度规则和时区，Serde 将二者存为字符串；tick 的序列化字段为 `timestamp` 和 `_marker`。
-- 无法表示的时间戳返回 `InvalidTimestamp` 并保留缓存，重复轮询仍返回错误，不推进规则。有效但已到期的 tick 会延迟交付，保留原时间戳和任务 ID；消费者背压导致预取 tick 过期时也遵循此规则。这不会补建调度适配器未返回的执行时间。
+- 无法表示的时间戳返回 `InvalidTimestamp` 并保留缓存，重复轮询仍返回错误，不推进规则。有效但已到期的 tick 会延迟交付，保留原计划时间戳；消费者背压导致预取 tick 过期时也遵循此规则。这不会补建调度适配器未返回的执行时间。
 - 在截止时间前创建的定时器可以在较晚的轮询中产生任务。克隆或切换时区会清除定时器和缓存 tick，但保留调度规则已经推进的状态。
 - `poll_close` 立即确认关闭，不重置调度器；丢弃调度器会取消定时器。
 

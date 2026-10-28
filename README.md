@@ -44,6 +44,62 @@ miju-cron turns recurring schedules into typed tasks for miju Workers. Use it fo
 - **Custom schedules**: implement `Schedule<Tz>` for your own timing rules or finite sequences.
 - **Configuration**: serialize ticks and compatible schedule configurations with Serde.
 
+## How it fits together
+
+Each adapter implements `Schedule<Tz>` to compute the next tick. `Config<S, Tz>` pairs the schedule with a timezone; `CronScheduler` turns its ticks into tasks as a consumer polls it.
+
+```mermaid
+flowchart LR
+    subgraph config["Config&lt;S, Tz&gt;"]
+        direction TB
+        schedule["Schedule&lt;Tz&gt;<br/>cron / English / builder<br/>Jiff / custom"]
+        timezone["Timezone: Tz"]
+    end
+    config --> scheduler["CronScheduler&lt;S, Tz&gt;<br/>Cache tick · wait<br/>Build Task&lt;Tick&lt;Tz&gt;&gt;"]
+    subgraph paths["Choose one consumption path"]
+        stream["Your async loop<br/>Result&lt;Tick&lt;Tz&gt;, Error&gt;"]
+        storage[("Destination backend")]
+        worker["miju Worker<br/>Middleware → handler"]
+        storage --> worker
+    end
+    scheduler -->|"into_stream()"| stream
+    scheduler -->|"pipe_to(storage)"| storage
+    scheduler -->|"Direct"| worker
+```
+
+<details>
+<summary>ASCII version (for readers without Mermaid support)</summary>
+
+```text
+cron / English / builder / Jiff / custom
+                    |
+                    v
+              Schedule<Tz> <--- timezone: Tz
+                    |
+             Option<Tick<Tz>>
+                    |
+                    v
+       +---------------------------+
+       | CronScheduler<S, Tz>      |
+       | Cache one tick + timer    |
+       | Wait, then create a task  |
+       +---------------------------+
+                    |
+                    v
+              Task<Tick<Tz>>
+
+Choose one consumption path:
+  CronScheduler -----------------> miju Worker -> handler
+  CronScheduler.into_stream() ----> your async loop
+  CronScheduler.pipe_to(storage) -> storage -> miju Worker -> handler
+```
+
+</details>
+
+The Worker applies configured middleware for retries, shared data, and execution limits before invoking your handler. `into_stream()` uses the same scheduling path but exposes only `Result<Tick<Tz>, Error>` to your loop. With `pipe_to`, emitted tasks pass through the destination backend before the Worker receives them; storage guarantees belong to that backend.
+
+These are alternative ways to consume a scheduler. Its progress is driven by polling, so constructing one alone does not start a background task or execute a handler.
+
 ## Installation
 
 Add these dependencies for the cron Worker example below.
@@ -228,11 +284,51 @@ With `default-features = false`, the scheduler and custom schedules remain avail
 
 ## Scheduling behavior
 
-`CronScheduler` caches a tick, waits until it is due, emits a task, and prefetches the next occurrence. Each task carries a timestamp-derived ULID. Cron and English adapters use the current clock; the builder advances from its previous tick. Timers use real elapsed time rather than Tokio's paused clock.
+The following flow runs when a consumer polls `CronScheduler`. A pending timer registers a wakeup; the next poll resumes with the cached tick and timer.
+
+```mermaid
+flowchart LR
+    tick["1. Use cached tick<br/>or next_tick(&timezone)"] -->|"Some(tick)"| timer["2. Create/reuse timer<br/>Already due: zero delay"]
+    timer -->|"Ready"| prefetch["3. Take tick; clear timer<br/>Prefetch next tick<br/>(no timer for it yet)"]
+    prefetch --> task["4. Build and return<br/>current Task&lt;Tick&lt;Tz&gt;&gt;"]
+    tick -->|"None"| exhausted["Ready(None)"]
+    timer -->|"Invalid timestamp"| error["Return InvalidTimestamp<br/>Keep cached tick"]
+    timer -->|"Pending"| pending["Return Pending<br/>Keep tick and timer"]
+    pending -.->|"Consumer polls after wake"| tick
+```
+
+<details>
+<summary>ASCII version (for readers without Mermaid support)</summary>
+
+```text
+Use cached tick, or call Schedule::next_tick(&timezone)
+    |
+    +-- None ---------------------------> Ready(None)
+    |
+    v
+Create or reuse the timer for this tick
+(already due: use zero delay)
+    |
+    +-- invalid timestamp --------------> Error; keep cached tick
+    +-- timer pending ------------------> Pending; resume on wake
+    |
+    v
+Take current tick; clear timer
+    |
+    v
+Prefetch next tick (no timer for it yet)
+    |
+    v
+Build and return Task<Tick<Tz>>
+```
+
+</details>
+
+Prefetch happens before the current task is returned, not after its handler finishes. Each task gets a ULID whose time component comes from its scheduled timestamp. Cron, English, and Jiff adapters compute the next occurrence from the current clock; the builder starts from the current clock and then advances from its previous tick. Custom schedules define their own progression. Timers use real elapsed time rather than Tokio's paused clock.
 
 - `Tick<Tz>` stores a UTC UNIX timestamp in seconds; the timezone type describes how the schedule is interpreted.
 - `Config<S, Tz>` holds a schedule and timezone. Serde stores these as strings; tick serialization contains `timestamp` and `_marker`.
-- Unrepresentable timestamps return `InvalidTimestamp` and remain cached, so repeated polling returns the error without advancing the schedule. Valid ticks that are already due are delivered late with their original timestamp and task ID, including ticks prefetched before consumer backpressure. This does not reconstruct occurrences omitted by the schedule adapter.
+- Unrepresentable timestamps return `InvalidTimestamp` and remain cached, so repeated polling returns the error without advancing the schedule. Valid ticks that are already due are delivered late with their original scheduled timestamp, including ticks prefetched before consumer backpressure. This does not reconstruct occurrences omitted by the schedule adapter.
 - A timer created before its deadline can still emit the task when polled late. Cloning or changing the timezone clears the timer and cached tick, retaining the schedule's advanced state.
 - `poll_close` acknowledges immediately without resetting the scheduler; dropping it cancels its timer.
 
