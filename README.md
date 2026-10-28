@@ -1,39 +1,36 @@
 <p align="center">
-  <img src="assets/miju-cron-header.svg" alt="miju-cron" width="480" />
+  <img src="https://raw.githubusercontent.com/nanfeng-labs/miju-cron/main/assets/miju-cron-header.svg" alt="miju-cron" width="480" />
 </p>
 
 <h1 align="center">miju-cron</h1>
 
-<div align="center">
+<p align="center">
   <strong>Recurring task scheduling for Rust, built for miju Workers</strong>
-</div>
+</p>
 
-<br />
-
-<div align="center">
+<p align="center">
   <a href="https://crates.io/crates/miju-cron">
     <img src="https://img.shields.io/crates/v/miju-cron.svg" alt="Crates.io version" />
   </a>
   <a href="https://github.com/nanfeng-labs/miju-cron/actions/workflows/ci.yaml">
     <img src="https://github.com/nanfeng-labs/miju-cron/actions/workflows/ci.yaml/badge.svg?branch=main" alt="CI" />
   </a>
-  <a href="Cargo.toml">
+  <a href="https://github.com/nanfeng-labs/miju-cron/blob/main/Cargo.toml">
     <img src="https://img.shields.io/badge/Rust-1.89%2B-orange.svg" alt="Rust 1.89+" />
   </a>
   <a href="https://github.com/nanfeng-labs/miju">
     <img src="https://img.shields.io/badge/built%20for-miju-FF9A24.svg" alt="Built for miju" />
   </a>
-</div>
+</p>
 
-<br />
+<p align="center">
+  <a href="https://github.com/nanfeng-labs/miju-cron/blob/main/README.zh-CN.md">简体中文</a>
+</p>
 
-<div align="center">
-  <a href="README.zh-CN.md">简体中文</a>
-</div>
+miju-cron turns recurring schedules into typed tasks for miju Workers.
 
-<br />
-
-miju-cron turns recurring schedules into typed tasks for miju Workers. Use it for periodic reports, reminders, and maintenance jobs, or consume scheduled ticks directly as a stream.
+Use it for periodic reports, reminders, and maintenance jobs, or consume
+scheduled ticks directly as a stream.
 
 ## Features
 
@@ -43,62 +40,6 @@ miju-cron turns recurring schedules into typed tasks for miju Workers. Use it fo
 - **Backend composition**: forward emitted tasks to a storage backend with `pipe_to`.
 - **Custom schedules**: implement `Schedule<Tz>` for your own timing rules or finite sequences.
 - **Configuration**: serialize ticks and compatible schedule configurations with Serde.
-
-## How it fits together
-
-Each adapter implements `Schedule<Tz>` to compute the next tick. `Config<S, Tz>` pairs the schedule with a timezone; `CronScheduler` turns its ticks into tasks as a consumer polls it.
-
-```mermaid
-flowchart LR
-    subgraph config["Config&lt;S, Tz&gt;"]
-        direction TB
-        schedule["Schedule&lt;Tz&gt;<br/>cron / English / builder<br/>Jiff / custom"]
-        timezone["Timezone: Tz"]
-    end
-    config --> scheduler["CronScheduler&lt;S, Tz&gt;<br/>Cache tick · wait<br/>Build Task&lt;Tick&lt;Tz&gt;&gt;"]
-    subgraph paths["Choose one consumption path"]
-        stream["Your async loop<br/>Result&lt;Tick&lt;Tz&gt;, Error&gt;"]
-        storage[("Destination backend")]
-        worker["miju Worker<br/>Middleware → handler"]
-        storage --> worker
-    end
-    scheduler -->|"into_stream()"| stream
-    scheduler -->|"pipe_to(storage)"| storage
-    scheduler -->|"Direct"| worker
-```
-
-<details>
-<summary>ASCII version (for readers without Mermaid support)</summary>
-
-```text
-cron / English / builder / Jiff / custom
-                    |
-                    v
-              Schedule<Tz> <--- timezone: Tz
-                    |
-             Option<Tick<Tz>>
-                    |
-                    v
-       +---------------------------+
-       | CronScheduler<S, Tz>      |
-       | Cache one tick + timer    |
-       | Wait, then create a task  |
-       +---------------------------+
-                    |
-                    v
-              Task<Tick<Tz>>
-
-Choose one consumption path:
-  CronScheduler -----------------> miju Worker -> handler
-  CronScheduler.into_stream() ----> your async loop
-  CronScheduler.pipe_to(storage) -> storage -> miju Worker -> handler
-```
-
-</details>
-
-The Worker applies configured middleware for retries, shared data, and execution limits before invoking your handler. `into_stream()` uses the same scheduling path but exposes only `Result<Tick<Tz>, Error>` to your loop. With `pipe_to`, emitted tasks pass through the destination backend before the Worker receives them; storage guarantees belong to that backend.
-
-These are alternative ways to consume a scheduler. Its progress is driven by polling, so constructing one alone does not start a background task or execute a handler.
 
 ## Installation
 
@@ -147,7 +88,9 @@ async fn main() -> Result<(), BoxDynError> {
 # }
 ```
 
-`run()` waits until the Worker stops. Interrupt this example to exit, or use `WorkerContext::stop()` in an application. The retry policy applies when a handler returns an error; the simple handler above always succeeds. See [basic](examples/basic.rs) for another shared-data example.
+`run()` waits until the Worker stops. Interrupt this example to exit, or use `WorkerContext::stop()` in an application.
+
+The retry policy applies when a handler returns an error; the simple handler above always succeeds. See [basic](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/basic.rs) for another shared-data example.
 
 ### Fluent schedules and timezones
 
@@ -165,9 +108,11 @@ let backend = CronScheduler::new(monday_morning)
 # }
 ```
 
-Pass `backend` to `.backend(...)` on a Worker builder. Its handler receives `Tick<chrono_tz::Tz>`. `every(5).minutes()` advances by five minutes; weekday selectors such as `.monday()` select weekly scheduling automatically. See [timezone](examples/timezone.rs) for a complete Worker using local time.
+Pass `backend` to `.backend(...)` on a Worker builder. Its handler receives `Tick<chrono_tz::Tz>`. `every(5).minutes()` advances by five minutes; weekday selectors such as `.monday()` select weekly scheduling automatically. See [timezone](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/timezone.rs) for a complete Worker using local time.
 
-Minute/hour schedules without `.at(...)` measure elapsed time. Day/week schedules preserve local wall time. Zero intervals, invalid times, date overflow, and ambiguous or nonexistent DST times end a builder schedule with `None`; choose an adapter whose DST policy fits your application. `at` accepts `:SS`, `HH:MM`, and `HH:MM:SS`, using the fields relevant to the selected unit.
+Minute/hour schedules without `.at(...)` measure elapsed time. Day/week schedules preserve local wall time.
+
+Zero intervals, invalid times, date overflow, and ambiguous or nonexistent DST times end a builder schedule with `None`; choose an adapter whose DST policy fits your application. `at` accepts `:SS`, `HH:MM`, and `HH:MM:SS`, using the fields relevant to the selected unit.
 
 ### English routines
 
@@ -186,7 +131,9 @@ let backend = CronScheduler::new(routine).with_timezone(chrono::Local);
 # fn main() {}
 ```
 
-Parsing is case-insensitive and preserves the original input. Multiple clock times with different minutes (for example, `at 9:30 and 11:45`) return an error; use separate routines for these times. English routines are converted to cron expressions, and their next occurrence is computed from the current clock. See [english](examples/english.rs) for Worker integration and [config](examples/config.rs) for a serialized schedule, timezone, and middleware configuration.
+Parsing is case-insensitive and preserves the original input. Multiple clock times with different minutes (for example, `at 9:30 and 11:45`) return an error; use separate routines for these times.
+
+English routines are converted to cron expressions, and their next occurrence is computed from the current clock. See [english](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/english.rs) for Worker integration and [config](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/config.rs) for a serialized schedule, timezone, and middleware configuration.
 
 ### Forwarding ticks to another backend
 
@@ -282,7 +229,65 @@ while let Some(tick) = ticks.next().await {
 
 With `default-features = false`, the scheduler and custom schedules remain available. Without `chrono`, `timezone::Utc` is a lightweight marker.
 
-## Scheduling behavior
+## How it fits together
+
+Each adapter implements `Schedule<Tz>` to compute the next tick. `Config<S, Tz>` pairs the schedule with a timezone; `CronScheduler` turns its ticks into tasks as a consumer polls it.
+
+```mermaid
+flowchart LR
+    subgraph config["Config&lt;S, Tz&gt;"]
+        direction TB
+        schedule["Schedule&lt;Tz&gt;<br/>cron / English / builder<br/>Jiff / custom"]
+        timezone["Timezone: Tz"]
+    end
+    config --> scheduler["CronScheduler&lt;S, Tz&gt;<br/>Cache tick · wait<br/>Build Task&lt;Tick&lt;Tz&gt;&gt;"]
+    subgraph paths["Choose one consumption path"]
+        stream["Your async loop<br/>Result&lt;Tick&lt;Tz&gt;, Error&gt;"]
+        storage[("Destination backend")]
+        worker["miju Worker<br/>Middleware → handler"]
+        storage --> worker
+    end
+    scheduler -->|"into_stream()"| stream
+    scheduler -->|"pipe_to(storage)"| storage
+    scheduler -->|"Direct"| worker
+```
+
+<details>
+<summary>Text version</summary>
+
+```text
+cron / English / builder / Jiff / custom
+                    |
+                    v
+              Schedule<Tz> <--- timezone: Tz
+                    |
+             Option<Tick<Tz>>
+                    |
+                    v
+       +---------------------------+
+       | CronScheduler<S, Tz>      |
+       | Cache one tick + timer    |
+       | Wait, then create a task  |
+       +---------------------------+
+                    |
+                    v
+              Task<Tick<Tz>>
+
+Choose one consumption path:
+  CronScheduler -----------------> miju Worker -> handler
+  CronScheduler.into_stream() ----> your async loop
+  CronScheduler.pipe_to(storage) -> storage -> miju Worker -> handler
+```
+
+</details>
+
+The Worker applies configured middleware for retries, shared data, and execution limits before invoking your handler.
+
+`into_stream()` uses the same scheduling path but exposes only `Result<Tick<Tz>, Error>` to your loop. With `pipe_to`, emitted tasks pass through the destination backend before the Worker receives them; storage guarantees belong to that backend.
+
+These are alternative ways to consume a scheduler. Its progress is driven by polling, so constructing one alone does not start a background task or execute a handler.
+
+### Scheduling behavior
 
 The following flow runs when a consumer polls `CronScheduler`. A pending timer registers a wakeup; the next poll resumes with the cached tick and timer.
 
@@ -298,7 +303,7 @@ flowchart LR
 ```
 
 <details>
-<summary>ASCII version (for readers without Mermaid support)</summary>
+<summary>Text version</summary>
 
 ```text
 Use cached tick, or call Schedule::next_tick(&timezone)
@@ -324,7 +329,9 @@ Build and return Task<Tick<Tz>>
 
 </details>
 
-Prefetch happens before the current task is returned, not after its handler finishes. Each task gets a ULID whose time component comes from its scheduled timestamp. Cron, English, and Jiff adapters compute the next occurrence from the current clock; the builder starts from the current clock and then advances from its previous tick. Custom schedules define their own progression. Timers use real elapsed time rather than Tokio's paused clock.
+Prefetch happens before the current task is returned, not after its handler finishes. Each task gets a ULID whose time component comes from its scheduled timestamp.
+
+Cron, English, and Jiff adapters compute the next occurrence from the current clock; the builder starts from the current clock and then advances from its previous tick. Custom schedules define their own progression. Timers use real elapsed time rather than Tokio's paused clock.
 
 - `Tick<Tz>` stores a UTC UNIX timestamp in seconds; the timezone type describes how the schedule is interpreted.
 - `Config<S, Tz>` holds a schedule and timezone. Serde stores these as strings; tick serialization contains `timestamp` and `_marker`.
@@ -338,12 +345,12 @@ Run these commands from the repository root:
 
 | Example | Demonstrates | Command |
 | --- | --- | --- |
-| [basic](examples/basic.rs) | Cron expressions, retries, and shared data. | `cargo run --locked --example basic` |
-| [builder](examples/builder.rs) | Fluent schedules and Worker execution. | `cargo run --locked --example builder --features builder` |
-| [timezone](examples/timezone.rs) | Timezone-typed ticks with the builder. | `cargo run --locked --example timezone --features builder` |
-| [english](examples/english.rs) | English routines with local time and retries. | `cargo run --locked --example english --features english` |
-| [config](examples/config.rs) | Serialized Worker, backend, and middleware configuration. | `cargo run --locked --example config --features english,serde` |
-| [custom](examples/custom.rs) | A custom local-time daily schedule. | `cargo run --locked --example custom --features chrono` |
+| [basic](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/basic.rs) | Cron expressions, retries, and shared data. | `cargo run --locked --example basic` |
+| [builder](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/builder.rs) | Fluent schedules and Worker execution. | `cargo run --locked --example builder --features builder` |
+| [timezone](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/timezone.rs) | Timezone-typed ticks with the builder. | `cargo run --locked --example timezone --features builder` |
+| [english](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/english.rs) | English routines with local time and retries. | `cargo run --locked --example english --features english` |
+| [config](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/config.rs) | Serialized Worker, backend, and middleware configuration. | `cargo run --locked --example config --features english,serde` |
+| [custom](https://github.com/nanfeng-labs/miju-cron/blob/main/examples/custom.rs) | A custom local-time daily schedule. | `cargo run --locked --example custom --features chrono` |
 
 The examples schedule recurring work and normally continue until interrupted. `basic` uses `@daily`, so it does not produce an immediate tick.
 
