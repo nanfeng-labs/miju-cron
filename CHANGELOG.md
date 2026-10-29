@@ -4,6 +4,8 @@
 
 ## [0.2.0](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.2.0)
 
+- bump: to v0.2.0 ([#16](https://github.com/nanfeng-labs/miju-cron/pull/16))
+
 ### Upgrading to v0.2.0
 
 Update `miju-cron` and the miju crates used by your application to `0.2.0` together.
