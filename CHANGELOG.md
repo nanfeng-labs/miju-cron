@@ -2,12 +2,28 @@
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.2.0)
+
+### Upgrading to v0.2.0
+
+Update `miju-cron` and the miju crates used by your application to `0.2.0` together.
+
+#### miju integration
+
+The scheduler now depends on `miju-core` 0.2.0. Applications that pass scheduler tasks to miju Workers or file-storage backends must use the 0.2 ecosystem so that task and backend types match.
+
+#### PR breakdown
+
 - docs: fix README links and improve reading flow ([#15](https://github.com/nanfeng-labs/miju-cron/pull/15))
 - docs(readme): explain scheduler architecture and tick lifecycle ([#14](https://github.com/nanfeng-labs/miju-cron/pull/14))
 - fix: harden config decoding and English schedules ([#13](https://github.com/nanfeng-labs/miju-cron/pull/13))
 - docs(readme): improve spacing and remove redundant MSRV prose ([#12](https://github.com/nanfeng-labs/miju-cron/pull/12))
 - fix(examples): inject data into custom schedule worker ([#11](https://github.com/nanfeng-labs/miju-cron/pull/11))
 - fix(scheduler): deliver overdue ticks under backpressure ([#10](https://github.com/nanfeng-labs/miju-cron/pull/10))
+
+### Breaking Changes
+
+- Require `miju-core` 0.2.0; scheduler integration types are no longer interchangeable with those from miju-core 0.1.x.
 
 ## [0.1.1](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.1.1)
 

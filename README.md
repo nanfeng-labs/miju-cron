@@ -47,8 +47,8 @@ Add these dependencies for the cron Worker example below.
 
 ```toml
 [dependencies]
-miju-cron = "0.1.1"
-miju = "0.1.1"
+miju-cron = "0.2.0"
+miju = "0.2.0"
 cron = "0.17"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
@@ -94,7 +94,7 @@ The retry policy applies when a handler returns an error; the simple handler abo
 
 ### Fluent schedules and timezones
 
-Enable `builder` with `miju-cron = { version = "0.1.1", features = ["builder"] }`. For this example, also add `chrono = "0.4"` and `chrono-tz = "0.10"`.
+Enable `builder` with `miju-cron = { version = "0.2.0", features = ["builder"] }`. For this example, also add `chrono = "0.4"` and `chrono-tz = "0.10"`.
 
 ```rust
 # #[cfg(feature = "builder")]
@@ -137,7 +137,7 @@ English routines are converted to cron expressions, and their next occurrence is
 
 ### Forwarding ticks to another backend
 
-The scheduler itself is ephemeral. `pipe_to` lets another backend accept the tasks it emits. Add `miju-core = "0.1.1"` and `miju-file-storage = "0.1.1"` for this example:
+The scheduler itself is ephemeral. `pipe_to` lets another backend accept the tasks it emits. Add `miju-core = "0.2.0"` and `miju-file-storage = "0.2.0"` for this example:
 
 ```rust,no_run
 # #[cfg(all(feature = "cron", feature = "serde"))]
@@ -192,7 +192,7 @@ let backend = CronScheduler::new(schedule);
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-A Worker consuming a finite schedule can shut down after exhaustion with miju 0.1.1. Custom implementations must return valid timestamps and decide how to handle timezone transitions and missed occurrences.
+A Worker consuming a finite schedule can shut down after exhaustion with miju 0.2.0. Custom implementations must return valid timestamps and decide how to handle timezone transitions and missed occurrences.
 
 ### Using a tick stream
 

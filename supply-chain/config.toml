@@ -172,24 +172,24 @@ criteria = "safe-to-deploy"
 notes = "Temporary unaudited baseline accepted on 2026-10-26: byte searching used by parsers and test serialization. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.miju]]
-version = "0.1.1"
+version = "0.2.0"
 criteria = "safe-to-run"
-notes = "Temporary unaudited baseline accepted on 2026-10-27: published worker framework used by integration tests. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+notes = "Temporary unaudited baseline updated on 2026-10-29: published worker framework used by integration tests. The 0.2.0 manifests retain the same third-party dependencies; compatibility is checked by this repository's CI. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.miju-codec]]
-version = "0.1.1"
+version = "0.2.0"
 criteria = "safe-to-run"
-notes = "Temporary unaudited baseline accepted on 2026-10-27: serialization support for the published file backend used by integration tests. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+notes = "Temporary unaudited baseline updated on 2026-10-29: serialization support for the published file backend used by integration tests. The 0.2.0 manifests retain the same third-party dependencies; compatibility is checked by this repository's CI. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.miju-core]]
-version = "0.1.1"
+version = "0.2.0"
 criteria = "safe-to-deploy"
-notes = "Temporary unaudited baseline accepted on 2026-10-27: published scheduler and worker interfaces. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+notes = "Temporary unaudited baseline updated on 2026-10-29: published scheduler and worker interfaces. The 0.2.0 manifests retain the same third-party dependencies; compatibility is checked by this repository's CI. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.miju-file-storage]]
-version = "0.1.1"
+version = "0.2.0"
 criteria = "safe-to-run"
-notes = "Temporary unaudited baseline accepted on 2026-10-27: published file backend used by integration tests. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
+notes = "Temporary unaudited baseline updated on 2026-10-29: published file backend used by integration tests. The 0.2.0 manifests retain the same third-party dependencies; compatibility is checked by this repository's CI. No complete source audit is claimed. Replace with matching audits when available; reassess on version changes."
 
 [[exemptions.once_cell]]
 version = "1.21.4"
