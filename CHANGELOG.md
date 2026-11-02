@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- ci(dependabot): preserve the Rust 1.89.0 MSRV ([#19](https://github.com/nanfeng-labs/miju-cron/pull/19))
 - ci(dependabot): enable weekly dependency updates ([#17](https://github.com/nanfeng-labs/miju-cron/pull/17))
 
 ## [0.2.0](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.2.0)
