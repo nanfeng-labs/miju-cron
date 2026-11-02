@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- ci(dependabot): enable weekly dependency updates ([#17](https://github.com/nanfeng-labs/miju-cron/pull/17))
+
 ## [0.2.0](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.2.0)
 
 - bump: to v0.2.0 ([#16](https://github.com/nanfeng-labs/miju-cron/pull/16))
