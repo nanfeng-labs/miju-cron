@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.2.1)
+
+- bump: to v0.2.1 ([#21](https://github.com/nanfeng-labs/miju-cron/pull/21))
+
+### Changed
+
+- Require `miju-core` 0.2.1 and use miju 0.2.1 in integration examples and tests.
+  Scheduler APIs and behavior are unchanged.
+
 - deps: require miju 0.2.1 ([#20](https://github.com/nanfeng-labs/miju-cron/pull/20))
 - ci(dependabot): preserve the Rust 1.89.0 MSRV ([#19](https://github.com/nanfeng-labs/miju-cron/pull/19))
 - ci(dependabot): enable weekly dependency updates ([#17](https://github.com/nanfeng-labs/miju-cron/pull/17))

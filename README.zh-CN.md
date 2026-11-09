@@ -46,7 +46,7 @@ miju-cron 将周期调度规则转换为 miju Worker 可以处理的类型化任
 
 ```toml
 [dependencies]
-miju-cron = "0.2.0"
+miju-cron = "0.2.1"
 miju = "0.2.1"
 cron = "0.17"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
@@ -93,7 +93,7 @@ async fn main() -> Result<(), BoxDynError> {
 
 ### 链式调度与时区
 
-通过 `miju-cron = { version = "0.2.0", features = ["builder"] }` 启用 builder。运行此示例还需添加 `chrono = "0.4"` 和 `chrono-tz = "0.10"`。
+通过 `miju-cron = { version = "0.2.1", features = ["builder"] }` 启用 builder。运行此示例还需添加 `chrono = "0.4"` 和 `chrono-tz = "0.10"`。
 
 ```rust
 # #[cfg(feature = "builder")]
