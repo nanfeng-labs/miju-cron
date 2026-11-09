@@ -43,11 +43,35 @@ criteria = "safe-to-deploy"
 delta = "0.4.29 -> 0.4.34"
 notes = "Reviewed source/manifests/tests delta. Static and borrowed keys now compare/hash by string contents; lifetime-preserving getters return only existing borrows. Network types use Display without network operations. Boxed logger is exposed under alloc with the existing atomic installation path and Box::leak. No new unsafe implementation or runtime dependencies. Existing logger initialization synchronization unchanged."
 
+[[audits.miju]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-run"
+delta = "0.2.0 -> 0.2.1"
+notes = "Reviewed the published package delta against the release commit. Rust implementation sources are unchanged; updates are limited to package metadata, documentation or generated lockfiles, and internal miju dependency requirements moving to 0.2.1. No new runtime dependencies, build scripts or unsafe code. The 0.2.0 exemption remains the baseline; internal dependencies are reviewed separately."
+
 [[audits.miju-codec]]
 who = "Codex (AI-assisted source review)"
 criteria = "safe-to-run"
 version = "0.1.0"
 notes = "Full published-source review of lib/json/bincode/msgpack modules and manifests. Thin adapters delegate serialization to declared libraries, propagate errors and have no filesystem, network, process execution or unsafe code. Bincode trailing-byte acceptance is documented. Certification is safe-to-run only, not a guarantee for hostile unbounded input or an audit of dependencies."
+
+[[audits.miju-codec]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-run"
+delta = "0.2.0 -> 0.2.1"
+notes = "Reviewed the published package delta against the release commit. Rust implementation sources are unchanged; updates are limited to package metadata, documentation or generated lockfiles, and internal miju dependency requirements moving to 0.2.1. No new runtime dependencies, build scripts or unsafe code. The 0.2.0 exemption remains the baseline; internal dependencies are reviewed separately."
+
+[[audits.miju-core]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-deploy"
+delta = "0.2.0 -> 0.2.1"
+notes = "Reviewed the published 0.2.0 to 0.2.1 source and manifest delta against the release commit. Runtime changes are confined to Monitor: retain an observed signal error outside the terminator future and yield with an explicit wake after successful restart. No public type, unsafe code, I/O boundary, or third-party dependency requirement changes. Reviewed regression tests for both changes and isolated restart ablations. The 0.2.0 exemption remains the baseline; dependencies require separate coverage."
+
+[[audits.miju-file-storage]]
+who = "Codex (AI-assisted source review)"
+criteria = "safe-to-run"
+delta = "0.2.0 -> 0.2.1"
+notes = "Reviewed the published package delta against the release commit. Rust implementation sources are unchanged; updates are limited to package metadata, documentation or generated lockfiles, and internal miju dependency requirements moving to 0.2.1. No new runtime dependencies, build scripts or unsafe code. The 0.2.0 exemption remains the baseline; internal dependencies are reviewed separately."
 
 [[audits.phf]]
 who = "Codex (AI-assisted source review)"
