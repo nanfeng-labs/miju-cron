@@ -47,7 +47,7 @@ Add these dependencies for the cron Worker example below.
 
 ```toml
 [dependencies]
-miju-cron = "0.2.0"
+miju-cron = "0.2.1"
 miju = "0.2.1"
 cron = "0.17"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
@@ -94,7 +94,7 @@ The retry policy applies when a handler returns an error; the simple handler abo
 
 ### Fluent schedules and timezones
 
-Enable `builder` with `miju-cron = { version = "0.2.0", features = ["builder"] }`. For this example, also add `chrono = "0.4"` and `chrono-tz = "0.10"`.
+Enable `builder` with `miju-cron = { version = "0.2.1", features = ["builder"] }`. For this example, also add `chrono = "0.4"` and `chrono-tz = "0.10"`.
 
 ```rust
 # #[cfg(feature = "builder")]
