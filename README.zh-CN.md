@@ -47,7 +47,7 @@ miju-cron 将周期调度规则转换为 miju Worker 可以处理的类型化任
 ```toml
 [dependencies]
 miju-cron = "0.2.0"
-miju = "0.2.0"
+miju = "0.2.1"
 cron = "0.17"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
@@ -136,7 +136,7 @@ let backend = CronScheduler::new(routine).with_timezone(chrono::Local);
 
 ### 将 tick 转交其他后端
 
-调度器本身是临时后端，`pipe_to` 可以将产生的任务交给其他后端接收。运行此示例需添加 `miju-core = "0.2.0"` 和 `miju-file-storage = "0.2.0"`：
+调度器本身是临时后端，`pipe_to` 可以将产生的任务交给其他后端接收。运行此示例需添加 `miju-core = "0.2.1"` 和 `miju-file-storage = "0.2.1"`：
 
 ```rust,no_run
 # #[cfg(all(feature = "cron", feature = "serde"))]

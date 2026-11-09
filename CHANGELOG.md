@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- deps: require miju 0.2.1 ([#20](https://github.com/nanfeng-labs/miju-cron/pull/20))
 - ci(dependabot): preserve the Rust 1.89.0 MSRV ([#19](https://github.com/nanfeng-labs/miju-cron/pull/19))
 - ci(dependabot): enable weekly dependency updates ([#17](https://github.com/nanfeng-labs/miju-cron/pull/17))
 

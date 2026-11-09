@@ -48,7 +48,7 @@ Add these dependencies for the cron Worker example below.
 ```toml
 [dependencies]
 miju-cron = "0.2.0"
-miju = "0.2.0"
+miju = "0.2.1"
 cron = "0.17"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
@@ -137,7 +137,7 @@ English routines are converted to cron expressions, and their next occurrence is
 
 ### Forwarding ticks to another backend
 
-The scheduler itself is ephemeral. `pipe_to` lets another backend accept the tasks it emits. Add `miju-core = "0.2.0"` and `miju-file-storage = "0.2.0"` for this example:
+The scheduler itself is ephemeral. `pipe_to` lets another backend accept the tasks it emits. Add `miju-core = "0.2.1"` and `miju-file-storage = "0.2.1"` for this example:
 
 ```rust,no_run
 # #[cfg(all(feature = "cron", feature = "serde"))]
