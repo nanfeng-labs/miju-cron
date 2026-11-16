@@ -4,6 +4,8 @@
 
 ## [0.3.0](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.3.0)
 
+- bump: to v0.3.0 ([#24](https://github.com/nanfeng-labs/miju-cron/pull/24))
+
 ### Upgrading to v0.3.0
 
 Update `miju-cron` and the miju crates used by your application to `0.3.0` together, then check custom schedules.
