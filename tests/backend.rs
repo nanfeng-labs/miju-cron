@@ -3,9 +3,8 @@ use miju_core::{
     backend::{Backend, BackendConfig, TryNewBackend},
     worker::{builder::WorkerBuilder, context::WorkerContext},
 };
-use miju_cron::{Config, CronScheduler, Error, Schedule, Tick, timezone::Utc};
+use miju_cron::{Config, CronScheduler, Error, MissedTickPolicy, Schedule, Tick, timezone::Utc};
 use std::{
-    collections::VecDeque,
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -16,14 +15,18 @@ use std::{
 
 #[derive(Debug, Clone)]
 struct Finite {
-    ticks: VecDeque<u64>,
+    ticks: Vec<u64>,
     calls: Arc<AtomicUsize>,
 }
 
 impl Schedule<Utc> for Finite {
-    fn next_tick(&mut self, _: &Utc) -> Option<Tick> {
+    fn next_after(&self, after: &Tick, _: &Utc) -> Option<Tick> {
         self.calls.fetch_add(1, Ordering::SeqCst);
-        self.ticks.pop_front().map(Tick::new)
+        self.ticks
+            .iter()
+            .copied()
+            .find(|tick| *tick > after.get_timestamp())
+            .map(Tick::new)
     }
 }
 
@@ -69,9 +72,12 @@ fn extreme_timestamp_returns_error_on_first_poll() {
 }
 
 #[tokio::test]
-async fn overdue_ticks_are_delivered_in_order_and_source_exhausts() {
+async fn catch_up_delivers_overdue_ticks_in_order_and_source_exhausts() {
     let (backend, _) = finite([1, 2]);
-    let stream = backend.into_stream();
+    let stream = backend
+        .resume_after(&Tick::<Utc>::new(0))
+        .missed_ticks(MissedTickPolicy::CatchUp)
+        .into_stream();
     futures_util::pin_mut!(stream);
     for timestamp in [1, 2] {
         let tick = tokio::time::timeout(Duration::from_secs(1), stream.next())
@@ -168,22 +174,73 @@ async fn tokio_virtual_time_does_not_control_dependency_timer() {
 }
 
 #[test]
-fn clone_and_timezone_reset_cached_state_but_keep_advanced_schedule() {
-    let (mut backend, calls) = finite([now() + 60]);
+fn clone_and_timezone_keep_cursor_and_name_but_reset_cached_tick() {
+    let (backend, calls) = finite([1, now() + 60]);
+    let mut backend = backend.resume_after(&Tick::<Utc>::new(0)).with_name("job");
     let ctx = WorkerContext::new("clone");
     let mut cx = Context::from_waker(std::task::Waker::noop());
-    assert!(backend.poll_next(&mut cx, &ctx).is_pending());
     let mut cloned = backend.clone();
-    assert!(matches!(cloned.poll_next(&mut cx, &ctx), Poll::Ready(None)));
+    let Poll::Ready(Some(Ok(original))) = backend.poll_next(&mut cx, &ctx) else {
+        panic!("resumed scheduler must deliver the overdue tick")
+    };
+    let Poll::Ready(Some(Ok(copy))) = cloned.poll_next(&mut cx, &ctx) else {
+        panic!("clone must keep the resume cursor")
+    };
+    assert_eq!(original.args.get_timestamp(), 1);
+    assert_eq!(original.ctx().task_id(), copy.ctx().task_id());
+    // The original advanced past tick 1; a timezone change keeps that cursor.
     let mut changed = backend.with_timezone(Utc);
-    assert!(matches!(
-        changed.poll_next(&mut cx, &ctx),
-        Poll::Ready(None)
-    ));
-    assert_eq!(calls.load(Ordering::SeqCst), 3);
-    let restored =
+    assert!(changed.poll_next(&mut cx, &ctx).is_pending());
+    assert_eq!(calls.load(Ordering::SeqCst), 5);
+    let mut restored =
         CronScheduler::try_new(Config::new(changed.config().schedule().clone(), Utc)).unwrap();
-    assert!(restored.config().schedule().ticks.is_empty());
+    // A scheduler rebuilt from its config starts from now and skips tick 1.
+    assert!(restored.poll_next(&mut cx, &ctx).is_pending());
+}
+
+#[test]
+fn once_delivers_earliest_due_tick_then_continues_from_now() {
+    let future = now() + 60;
+    let (backend, _) = finite([1, 2, 3, future]);
+    let mut backend = backend.resume_after(&Tick::<Utc>::new(0));
+    let ctx = WorkerContext::new("once");
+    let mut cx = Context::from_waker(std::task::Waker::noop());
+    let Poll::Ready(Some(Ok(task))) = backend.poll_next(&mut cx, &ctx) else {
+        panic!("overdue tick must be delivered")
+    };
+    assert_eq!(task.args.get_timestamp(), 1);
+    // Ticks 2 and 3 are skipped; the next one is in the future.
+    assert!(backend.poll_next(&mut cx, &ctx).is_pending());
+}
+
+#[test]
+fn named_scheduler_produces_deterministic_ids_and_idempotency_keys() {
+    let ctx = WorkerContext::new("named");
+    let mut cx = Context::from_waker(std::task::Waker::noop());
+    let mut first_task = |name: Option<&str>| {
+        let (backend, _) = finite([1]);
+        let mut backend = backend.resume_after(&Tick::<Utc>::new(0));
+        if let Some(name) = name {
+            backend = backend.with_name(name);
+        }
+        let Poll::Ready(Some(Ok(task))) = backend.poll_next(&mut cx, &ctx) else {
+            panic!("overdue tick must be delivered")
+        };
+        task
+    };
+    let a = first_task(Some("report"));
+    let b = first_task(Some("report"));
+    let other = first_task(Some("cleanup"));
+    let unnamed = [first_task(None), first_task(None)];
+    assert_eq!(a.ctx().task_id(), b.ctx().task_id());
+    assert_ne!(a.ctx().task_id(), other.ctx().task_id());
+    assert_eq!(a.ctx().idempotency_key(), Some("report@1"));
+    assert_eq!(
+        a.ctx().task_id().unwrap().as_ulid().unwrap().timestamp_ms(),
+        1000
+    );
+    assert_ne!(unnamed[0].ctx().task_id(), unnamed[1].ctx().task_id());
+    assert_eq!(unnamed[0].ctx().idempotency_key(), None);
 }
 
 #[tokio::test]
@@ -362,10 +419,10 @@ async fn every_second_worker_survives_three_second_tasks_at_single_concurrency()
 #[tokio::test]
 async fn overdue_tick_does_not_skip_future_or_invalid_tick() {
     let future = now() + 2;
-    let (backend, calls) = finite([0, future, u64::MAX]);
-    let stream = backend.into_stream();
+    let (backend, calls) = finite([1, future, u64::MAX]);
+    let stream = backend.resume_after(&Tick::<Utc>::new(0)).into_stream();
     futures_util::pin_mut!(stream);
-    assert_eq!(stream.next().await.unwrap().unwrap().get_timestamp(), 0);
+    assert_eq!(stream.next().await.unwrap().unwrap().get_timestamp(), 1);
     let mut cx = Context::from_waker(std::task::Waker::noop());
     assert!(futures_util::Stream::poll_next(stream.as_mut(), &mut cx).is_pending());
     let tick = tokio::time::timeout(Duration::from_secs(4), stream.next())
@@ -386,7 +443,10 @@ async fn overdue_tick_does_not_skip_future_or_invalid_tick() {
 
 #[tokio::test]
 async fn overdue_finite_worker_drains_serially_and_reaches_eof() {
-    let (backend, _) = finite([0, 1, 2]);
+    let (backend, _) = finite([1, 2, 3]);
+    let backend = backend
+        .resume_after(&Tick::<Utc>::new(0))
+        .missed_ticks(MissedTickPolicy::CatchUp);
     let completed = Arc::new(AtomicUsize::new(0));
     let active = Arc::new(AtomicUsize::new(0));
     let observed = completed.clone();
@@ -398,7 +458,10 @@ async fn overdue_finite_worker_drains_serially_and_reaches_eof() {
             let active = active.clone();
             async move {
                 assert_eq!(active.fetch_add(1, Ordering::SeqCst), 0);
-                assert_eq!(tick.get_timestamp(), observed.load(Ordering::SeqCst) as u64);
+                assert_eq!(
+                    tick.get_timestamp(),
+                    observed.load(Ordering::SeqCst) as u64 + 1
+                );
                 tokio::time::sleep(Duration::from_millis(20)).await;
                 observed.fetch_add(1, Ordering::SeqCst);
                 active.fetch_sub(1, Ordering::SeqCst);

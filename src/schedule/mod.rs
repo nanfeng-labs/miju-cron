@@ -17,9 +17,13 @@ pub mod english;
 pub mod jiff;
 
 /// A trait representing a schedule that can compute the next tick.
+///
+/// Schedules are stateless: [`CronScheduler`](crate::CronScheduler) keeps the
+/// cursor and asks for the first tick after the last one it delivered, so the
+/// same tick is never produced twice even if the wall clock moves backwards.
 pub trait Schedule<Tz> {
-    /// Returns the next scheduled tick or `None` if there are no more ticks.
-    fn next_tick(&mut self, tz: &Tz) -> Option<Tick<Tz>>;
+    /// Returns the first tick strictly after `after`, or `None` if there are no more ticks.
+    fn next_after(&self, after: &Tick<Tz>, tz: &Tz) -> Option<Tick<Tz>>;
 }
 
 #[cfg(all(test, feature = "cron"))]

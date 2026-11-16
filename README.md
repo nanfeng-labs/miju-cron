@@ -166,33 +166,57 @@ async fn main() -> Result<(), BoxDynError> {
 # }
 ```
 
-`new_temp()` creates temporary storage for demonstration. Only tasks delivered to the destination receive its storage guarantees; review the file backend's persistence and concurrency contract before using it in an application. This does not persist schedule rules, replay downtime, elect a leader, or provide exactly-once execution.
+`new_temp()` creates temporary storage for demonstration. Only tasks delivered to the destination receive its storage guarantees; review the file backend's persistence and concurrency contract before using it in an application. This does not persist schedule rules, elect a leader, or provide exactly-once execution; see `with_name` and `resume_after` below for deduplication and replaying downtime.
 
 ### Custom schedules
 
-Implement `Schedule<Tz>` to return the next UTC UNIX timestamp in seconds. Return `None` when there are no more occurrences. This schedule emits two ticks:
+Implement `Schedule<Tz>` to return the first UTC UNIX timestamp, in seconds, strictly after the given tick. Return `None` when there are no more occurrences. The scheduler owns the cursor, so implementations stay stateless. This schedule emits two ticks:
 
 ```rust
 use miju_cron::{CronScheduler, Schedule, Tick, timezone::Utc};
-use std::collections::VecDeque;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
-struct Occurrences(VecDeque<u64>);
+struct Occurrences(Vec<u64>);
 
 impl Schedule<Utc> for Occurrences {
-    fn next_tick(&mut self, _: &Utc) -> Option<Tick<Utc>> {
-        self.0.pop_front().map(Tick::new)
+    fn next_after(&self, after: &Tick<Utc>, _: &Utc) -> Option<Tick<Utc>> {
+        self.0
+            .iter()
+            .copied()
+            .find(|t| *t > after.get_timestamp())
+            .map(Tick::new)
     }
 }
 
 let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-let schedule = Occurrences(VecDeque::from([now + 10, now + 20]));
+let schedule = Occurrences(vec![now + 10, now + 20]);
 let backend = CronScheduler::new(schedule);
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-A Worker consuming a finite schedule can shut down after exhaustion with miju 0.2.0. Custom implementations must return valid timestamps and decide how to handle timezone transitions and missed occurrences.
+A Worker consuming a finite schedule shuts down after exhaustion. Custom implementations must return valid timestamps and decide how to handle timezone transitions.
+
+### Names, resuming and missed ticks
+
+```rust,no_run
+# #[cfg(feature = "cron")]
+# fn example(last_handled: miju_cron::Tick) -> Result<(), Box<dyn std::error::Error>> {
+use cron::Schedule;
+use miju_cron::{CronScheduler, MissedTickPolicy};
+use std::str::FromStr;
+
+let backend = CronScheduler::new(Schedule::from_str("0 */5 * * * *")?)
+    .with_name("report")
+    .resume_after(&last_handled)
+    .missed_ticks(MissedTickPolicy::CatchUp);
+# Ok(())
+# }
+```
+
+- `with_name` makes each task ID deterministic and sets the idempotency key `"{name}@{timestamp}"`. Replicas or restarts with the same name emit the same ID for the same tick, so sinks that honour idempotency keys store it once, and miju rejects a duplicate that is still running. Unnamed schedulers keep random ULIDs. Give schedulers that feed the same worker or storage distinct names.
+- `resume_after` starts after a stored tick instead of the current time. Without it, ticks due while the process was down are skipped.
+- `MissedTickPolicy::Once` (default) delivers the earliest due tick and continues from the current time; `CatchUp` delivers every due tick in order.
 
 ### Using a tick stream
 
@@ -293,7 +317,7 @@ The following flow runs when a consumer polls `CronScheduler`. A pending timer r
 
 ```mermaid
 flowchart LR
-    tick["1. Use cached tick<br/>or next_tick(&timezone)"] -->|"Some(tick)"| timer["2. Create/reuse timer<br/>Already due: zero delay"]
+    tick["1. Use cached tick<br/>or next_after(cursor, &timezone)"] -->|"Some(tick)"| timer["2. Create/reuse timer<br/>Already due: zero delay"]
     timer -->|"Ready"| prefetch["3. Take tick; clear timer<br/>Prefetch next tick<br/>(no timer for it yet)"]
     prefetch --> task["4. Build and return<br/>current Task&lt;Tick&lt;Tz&gt;&gt;"]
     tick -->|"None"| exhausted["Ready(None)"]
@@ -306,7 +330,7 @@ flowchart LR
 <summary>Text version</summary>
 
 ```text
-Use cached tick, or call Schedule::next_tick(&timezone)
+Use cached tick, or call Schedule::next_after(cursor, &timezone)
     |
     +-- None ---------------------------> Ready(None)
     |
@@ -329,14 +353,14 @@ Build and return Task<Tick<Tz>>
 
 </details>
 
-Prefetch happens before the current task is returned, not after its handler finishes. Each task gets a ULID whose time component comes from its scheduled timestamp.
+Prefetch happens before the current task is returned, not after its handler finishes. Each task gets a ULID whose time component comes from its scheduled timestamp; named schedulers derive the rest from the name.
 
-Cron, English, and Jiff adapters compute the next occurrence from the current clock; the builder starts from the current clock and then advances from its previous tick. Custom schedules define their own progression. Timers use real elapsed time rather than Tokio's paused clock.
+The scheduler keeps a cursor: it starts at the current time (or the `resume_after` tick) and advances to each delivered tick (`CatchUp`) or to the later of that tick and the current time (`Once`). Schedules compute the first occurrence after the cursor, so a tick is never produced twice. Timers use real elapsed time rather than Tokio's paused clock; when a timer fires before the wall clock reaches the tick, the scheduler waits again instead of firing early.
 
 - `Tick<Tz>` stores a UTC UNIX timestamp in seconds; the timezone type describes how the schedule is interpreted.
 - `Config<S, Tz>` holds a schedule and timezone. Serde stores these as strings; tick serialization contains `timestamp` and `_marker`.
 - Unrepresentable timestamps return `InvalidTimestamp` and remain cached, so repeated polling returns the error without advancing the schedule. Valid ticks that are already due are delivered late with their original scheduled timestamp, including ticks prefetched before consumer backpressure. This does not reconstruct occurrences omitted by the schedule adapter.
-- A timer created before its deadline can still emit the task when polled late. Cloning or changing the timezone clears the timer and cached tick, retaining the schedule's advanced state.
+- A timer created before its deadline can still emit the task when polled late. Cloning or changing the timezone clears the timer and cached tick, keeping the cursor, name and policy.
 - `poll_close` acknowledges immediately without resetting the scheduler; dropping it cancels its timer.
 
 ## Examples and documentation

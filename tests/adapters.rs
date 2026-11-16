@@ -1,3 +1,16 @@
+use miju_cron::Tick;
+
+/// The current time as a cursor, matching how `CronScheduler` starts.
+#[allow(dead_code)]
+fn now<Tz>() -> Tick<Tz> {
+    Tick::new(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    )
+}
+
 #[cfg(feature = "builder")]
 #[test]
 fn builder_respects_interval_and_timezone() {
@@ -6,36 +19,54 @@ fn builder_respects_interval_and_timezone() {
         builder::schedule,
         timezone::{America::New_York, Asia::Tokyo},
     };
-    let mut every_two = schedule().every(2).minutes().build::<chrono::Utc>();
-    let first = every_two.next_tick(&chrono::Utc).unwrap().get_timestamp();
-    let second = every_two.next_tick(&chrono::Utc).unwrap().get_timestamp();
+    let every_two = schedule().every(2).minutes().build::<chrono::Utc>();
+    let first = every_two
+        .next_after(&now(), &chrono::Utc)
+        .unwrap()
+        .get_timestamp();
+    let second = every_two
+        .next_after(&Tick::new(first), &chrono::Utc)
+        .unwrap()
+        .get_timestamp();
     assert_eq!(second - first, 2 * 60);
-    let mut at = schedule()
+    let at = schedule()
         .every(2)
         .minutes()
         .at(":17")
         .build::<chrono::Utc>();
-    let first = at.next_tick(&chrono::Utc).unwrap().get_timestamp();
-    let second = at.next_tick(&chrono::Utc).unwrap().get_timestamp();
+    let first = at.next_after(&now(), &chrono::Utc).unwrap().get_timestamp();
+    let second = at
+        .next_after(&Tick::new(first), &chrono::Utc)
+        .unwrap()
+        .get_timestamp();
     assert_eq!(second - first, 2 * 60);
     assert_eq!(first % 60, 17);
-    let mut daily = schedule().each().day().at("10:30").build::<chrono_tz::Tz>();
-    daily.next_tick(&New_York).unwrap();
-    let mut same_start = daily.clone();
+    let daily = schedule().each().day().at("10:30").build::<chrono_tz::Tz>();
+    let start = now();
     assert_ne!(
-        daily.next_tick(&New_York).unwrap().get_timestamp(),
-        same_start.next_tick(&Tokyo).unwrap().get_timestamp()
+        daily.next_after(&start, &New_York).unwrap().get_timestamp(),
+        daily.next_after(&start, &Tokyo).unwrap().get_timestamp()
     );
-    let mut weekday_without_unit = schedule().each().monday().build::<chrono::Utc>();
-    assert!(weekday_without_unit.next_tick(&chrono::Utc).is_some());
-    let mut weekly = schedule()
+    let weekday_without_unit = schedule().each().monday().build::<chrono::Utc>();
+    assert!(
+        weekday_without_unit
+            .next_after(&now(), &chrono::Utc)
+            .is_some()
+    );
+    let weekly = schedule()
         .each()
         .week()
         .monday()
         .at("10:30")
         .build::<chrono::Utc>();
-    let first = weekly.next_tick(&chrono::Utc).unwrap().get_timestamp();
-    let second = weekly.next_tick(&chrono::Utc).unwrap().get_timestamp();
+    let first = weekly
+        .next_after(&now(), &chrono::Utc)
+        .unwrap()
+        .get_timestamp();
+    let second = weekly
+        .next_after(&Tick::new(first), &chrono::Utc)
+        .unwrap()
+        .get_timestamp();
     assert_eq!(second - first, 7 * 86400);
 }
 
@@ -46,10 +77,10 @@ fn english_preserves_input_errors_and_tick_contract() {
         Schedule,
         english::{EnglishRoutine, EnglishRoutineError},
     };
-    let mut routine = EnglishRoutine::new("every second").unwrap();
+    let routine = EnglishRoutine::new("every second").unwrap();
     assert_eq!(routine.input(), "every second");
     let before = chrono::Utc::now().timestamp();
-    let tick = routine.next_tick(&chrono::Utc).unwrap();
+    let tick = routine.next_after(&now(), &chrono::Utc).unwrap();
     let after = chrono::Utc::now().timestamp();
     assert!(tick.get_timestamp() > before as u64 && tick.get_timestamp() <= after as u64 + 1);
     assert!(matches!(
@@ -175,9 +206,9 @@ fn english_keeps_supported_clock_time_combinations() {
 fn jiff_schedule_reexport_and_seconds() {
     use jiff_cron::jiff::{Timestamp, tz::TimeZone};
     use miju_cron::{Schedule, jiff::JiffSchedule};
-    let mut schedule: JiffSchedule = "* * * * * *".parse().unwrap();
+    let schedule: JiffSchedule = "* * * * * *".parse().unwrap();
     let before = Timestamp::now().as_second();
-    let tick = schedule.next_tick(&TimeZone::UTC).unwrap();
+    let tick = schedule.next_after(&now(), &TimeZone::UTC).unwrap();
     let after = Timestamp::now().as_second();
     assert!(tick.get_timestamp() > before as u64 && tick.get_timestamp() <= after as u64 + 1);
 }
@@ -186,8 +217,8 @@ fn jiff_schedule_reexport_and_seconds() {
 #[test]
 fn cron_finite_schedule_has_no_past_tick() {
     use miju_cron::Schedule;
-    let mut past: cron::Schedule = "0 0 0 1 1 * 2000".parse().unwrap();
-    assert!(past.next_tick(&chrono::Utc).is_none());
+    let past: cron::Schedule = "0 0 0 1 1 * 2000".parse().unwrap();
+    assert!(past.next_after(&now(), &chrono::Utc).is_none());
 }
 
 #[cfg(feature = "builder")]
@@ -199,8 +230,8 @@ fn builder_rejects_zero_and_invalid_times() {
         if let Some(at) = at {
             builder = builder.at(at);
         }
-        let mut zero = builder.build::<chrono::Utc>();
-        assert!(zero.next_tick(&chrono::Utc).is_none());
+        let zero = builder.build::<chrono::Utc>();
+        assert!(zero.next_after(&now(), &chrono::Utc).is_none());
     }
     for at in ["bad", ":60", "25:00", "10:60", "10:30:60"] {
         assert!(
@@ -209,7 +240,7 @@ fn builder_rejects_zero_and_invalid_times() {
                 .day()
                 .at(at)
                 .build::<chrono::Utc>()
-                .next_tick(&chrono::Utc)
+                .next_after(&now(), &chrono::Utc)
                 .is_none()
         );
     }
@@ -225,9 +256,15 @@ fn builder_large_intervals_do_not_overflow() {
             if let Some(at) = at {
                 builder = builder.at(at);
             }
-            let mut schedule = builder.build::<chrono::Utc>();
-            let first = schedule.next_tick(&chrono::Utc).unwrap().get_timestamp();
-            let second = schedule.next_tick(&chrono::Utc).unwrap().get_timestamp();
+            let schedule = builder.build::<chrono::Utc>();
+            let first = schedule
+                .next_after(&now(), &chrono::Utc)
+                .unwrap()
+                .get_timestamp();
+            let second = schedule
+                .next_after(&Tick::new(first), &chrono::Utc)
+                .unwrap()
+                .get_timestamp();
             assert_eq!(second - first, u64::from(n) * 60);
         }
     }
@@ -241,16 +278,16 @@ fn cron_adapter_skips_dst_gap_and_returns_a_valid_fold_instant() {
     let year = chrono::Utc::now().year() + 1;
     let march_first = chrono::NaiveDate::from_ymd_opt(year, 3, 1).unwrap();
     let second_sunday = 1 + (7 - march_first.weekday().num_days_from_sunday()) % 7 + 7;
-    let mut gap: cron::Schedule = format!("0 30 2 {second_sunday} 3 * {year}")
+    let gap: cron::Schedule = format!("0 30 2 {second_sunday} 3 * {year}")
         .parse()
         .unwrap();
-    assert!(gap.next_tick(&New_York).is_none());
+    assert!(gap.next_after(&now(), &New_York).is_none());
     let november_first = chrono::NaiveDate::from_ymd_opt(year, 11, 1).unwrap();
     let first_sunday = 1 + (7 - november_first.weekday().num_days_from_sunday()) % 7;
-    let mut fold: cron::Schedule = format!("0 30 1 {first_sunday} 11 * {year}")
+    let fold: cron::Schedule = format!("0 30 1 {first_sunday} 11 * {year}")
         .parse()
         .unwrap();
-    let tick = fold.next_tick(&New_York).unwrap();
+    let tick = fold.next_after(&now(), &New_York).unwrap();
     let local = New_York
         .timestamp_opt(tick.get_timestamp() as i64, 0)
         .unwrap();
@@ -263,5 +300,37 @@ fn cron_adapter_skips_dst_gap_and_returns_a_valid_fold_instant() {
             local.minute()
         ),
         (year, 11, first_sunday, 1, 30)
+    );
+}
+
+#[cfg(all(feature = "cron", feature = "jiff", feature = "builder"))]
+#[test]
+fn next_after_is_strict_and_deterministic() {
+    use jiff_cron::jiff::tz::TimeZone;
+    use miju_cron::{Schedule, builder::schedule, jiff::JiffSchedule};
+    let at = Tick::new(1_800_000_000);
+    let cron: cron::Schedule = "* * * * * *".parse().unwrap();
+    assert_eq!(
+        cron.next_after(&at, &chrono::Utc).unwrap().get_timestamp(),
+        1_800_000_001
+    );
+    assert_eq!(
+        cron.next_after(&at, &chrono::Utc),
+        cron.next_after(&at, &chrono::Utc)
+    );
+    let jiff: JiffSchedule = "* * * * * *".parse().unwrap();
+    assert_eq!(
+        jiff.next_after(&Tick::new(1_800_000_000), &TimeZone::UTC)
+            .unwrap()
+            .get_timestamp(),
+        1_800_000_001
+    );
+    let minutely = schedule().each().minute().build::<chrono::Utc>();
+    assert_eq!(
+        minutely
+            .next_after(&at, &chrono::Utc)
+            .unwrap()
+            .get_timestamp(),
+        1_800_000_060
     );
 }

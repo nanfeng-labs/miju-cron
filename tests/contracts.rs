@@ -6,17 +6,18 @@ fn tick_order_and_schedule_exhaustion() {
     #[derive(Debug, PartialEq, PartialOrd)]
     struct Zone;
 
-    struct Once(Option<Tick<Zone>>);
+    struct Once(u64);
 
     impl Schedule<Zone> for Once {
-        fn next_tick(&mut self, _: &Zone) -> Option<Tick<Zone>> {
-            self.0.take()
+        fn next_after(&self, after: &Tick<Zone>, _: &Zone) -> Option<Tick<Zone>> {
+            (after.get_timestamp() < self.0).then(|| Tick::new(self.0))
         }
     }
 
-    let mut schedule = Once(Some(Tick::new(42)));
-    assert_eq!(schedule.next_tick(&Zone).unwrap().get_timestamp(), 42);
-    assert!(schedule.next_tick(&Zone).is_none());
+    let schedule = Once(42);
+    let first = schedule.next_after(&Tick::new(0), &Zone).unwrap();
+    assert_eq!(first.get_timestamp(), 42);
+    assert!(schedule.next_after(&first, &Zone).is_none());
     assert!(Tick::<Zone>::new(41) < Tick::<Zone>::new(42));
     let config = Config::new(String::from("rule"), 5_u8);
     let cloned = config.clone();
