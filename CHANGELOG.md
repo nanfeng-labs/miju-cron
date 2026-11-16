@@ -2,8 +2,37 @@
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.3.0)
+
+### Upgrading to v0.3.0
+
+Update `miju-cron` and the miju crates used by your application to `0.3.0` together, then check custom schedules.
+
+#### miju integration
+
+The scheduler now depends on `miju-core` 0.3.0. Applications that pass scheduler tasks to miju Workers or file-storage backends must use the 0.3 ecosystem so that task and backend types match.
+
+#### Custom schedules
+
+`Schedule::next_tick(&mut self, tz)` is replaced by `next_after(&self, after, tz)`, which returns the first tick strictly after `after`. `CronScheduler` now keeps the cursor, so implementations no longer track their own position or read the current time. The bundled cron, English, Jiff and builder adapters are updated; `builder::ScheduleIterator` no longer carries a current tick.
+
+#### Scheduling behavior
+
+- A tick is never produced twice, and a timer that fires before the wall clock reaches its tick waits again instead of firing early.
+- `MissedTickPolicy::Once` (default) keeps the previous behavior: when several ticks are due, deliver the earliest and continue from the current time. `MissedTickPolicy::CatchUp` delivers every due tick.
+- `resume_after(&tick)` continues from a stored tick instead of the current time.
+- `with_name(..)` gives each tick a deterministic task ID and the idempotency key `"{name}@{timestamp}"`. Unnamed schedulers keep random ULIDs.
+- Cloning or changing the timezone keeps the cursor, name and policy.
+
+#### PR breakdown
+
 - feat(scheduler)!: own the schedule cursor on miju 0.3 ([#22](https://github.com/nanfeng-labs/miju-cron/pull/22))
 - ci: append full changelog links to releases ([#23](https://github.com/nanfeng-labs/miju-cron/pull/23))
+
+### Breaking Changes
+
+- Require `miju-core` 0.3.0; scheduler integration types are no longer interchangeable with those from miju-core 0.2.x.
+- `Schedule::next_tick` is replaced by `Schedule::next_after`; custom schedules must be updated.
 
 ## [0.2.1](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.2.1)
 
