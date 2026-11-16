@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- ci: append full changelog links to releases ([#23](https://github.com/nanfeng-labs/miju-cron/pull/23))
+
 ## [0.2.1](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.2.1)
 
 - bump: to v0.2.1 ([#21](https://github.com/nanfeng-labs/miju-cron/pull/21))
