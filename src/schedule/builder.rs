@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, marker::PhantomData};
 
 use chrono::{DateTime, Datelike, Duration, NaiveTime, Offset, TimeZone, Timelike, Utc, Weekday};
 
@@ -284,7 +284,7 @@ impl WeekdayBuilder {
     }
 }
 
-/// Iterator over schedule ticks in the timezone supplied to `Schedule::next_tick`.
+/// Schedule ticks in the timezone supplied to `Schedule::next_after`.
 ///
 /// Zero intervals, invalid `at` times, dates outside Chrono's range, and ambiguous
 /// or nonexistent local times return `None`. Calendar intervals preserve local
@@ -292,7 +292,7 @@ impl WeekdayBuilder {
 #[derive(Debug, Clone)]
 pub struct ScheduleIterator<Tz> {
     schedule: ScheduleBuilder,
-    current: Option<Tick<Tz>>,
+    _marker: PhantomData<Tz>,
 }
 
 impl<Tz: chrono::TimeZone> ScheduleIterator<Tz> {
@@ -300,22 +300,14 @@ impl<Tz: chrono::TimeZone> ScheduleIterator<Tz> {
     pub fn new(schedule: ScheduleBuilder) -> Self {
         Self {
             schedule,
-            current: None,
+            _marker: PhantomData,
         }
     }
 }
 
-impl<Tz> fmt::Display for ScheduleIterator<Tz>
-where
-    Tz: TimeZone,
-    Tz::Offset: fmt::Display,
-{
+impl<Tz> fmt::Display for ScheduleIterator<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ScheduleIterator(schedule = {:?}, ", self.schedule)?;
-        match &self.current {
-            Some(dt) => write!(f, "next = {})", dt.get_timestamp()),
-            None => write!(f, "end)"),
-        }
+        write!(f, "ScheduleIterator(schedule = {:?})", self.schedule)
     }
 }
 
@@ -357,20 +349,12 @@ impl fmt::Display for ScheduleBuilder {
 }
 
 impl<Tz: Clone + TimeZone> crate::schedule::Schedule<Tz> for ScheduleIterator<Tz> {
-    fn next_tick(&mut self, timezone: &Tz) -> Option<Tick<Tz>> {
-        let current = self
-            .current
-            .as_ref()
-            .and_then(|t| i64::try_from(t.get_timestamp()).ok())
-            .and_then(DateTime::from_timestamp_secs)
-            .unwrap_or(Utc::now());
-        let next = self
-            .schedule
-            .calculate_next_execution(current, timezone)
+    fn next_after(&self, after: &Tick<Tz>, timezone: &Tz) -> Option<Tick<Tz>> {
+        let after = DateTime::from_timestamp_secs(i64::try_from(after.get_timestamp()).ok()?)?;
+        self.schedule
+            .calculate_next_execution(after, timezone)
             .and_then(|dt| u64::try_from(dt.timestamp()).ok())
-            .map(Tick::new);
-        self.current = next.clone();
-        next
+            .map(Tick::new)
     }
 }
 
@@ -388,13 +372,13 @@ mod tests {
 
     use std::time::Duration;
     fn from_tick<Tz: Clone + TimeZone>(
-        mut iterator: ScheduleIterator<Tz>,
+        iterator: ScheduleIterator<Tz>,
         from: DateTime<Utc>,
         timezone: &Tz,
     ) -> Option<DateTime<Tz>> {
         use crate::Schedule;
-        iterator.current = Some(Tick::new(from.timestamp().try_into().unwrap()));
-        let tick = iterator.next_tick(timezone)?;
+        let tick =
+            iterator.next_after(&Tick::new(from.timestamp().try_into().unwrap()), timezone)?;
         timezone
             .timestamp_opt(tick.get_timestamp().try_into().unwrap(), 0)
             .single()

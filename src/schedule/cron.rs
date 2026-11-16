@@ -1,10 +1,13 @@
 use crate::{Tick, schedule::Schedule};
 
 impl<Tz: chrono::TimeZone> Schedule<Tz> for cron::Schedule {
-    fn next_tick(&mut self, timezone: &Tz) -> Option<Tick<Tz>> {
-        self.upcoming(timezone.clone())
+    fn next_after(&self, after: &Tick<Tz>, timezone: &Tz) -> Option<Tick<Tz>> {
+        let after = timezone
+            .timestamp_opt(i64::try_from(after.get_timestamp()).ok()?, 0)
+            .single()?;
+        self.after(&after)
             .next()
-            .map(|d| d.timestamp() as _)
+            .and_then(|d| u64::try_from(d.timestamp()).ok())
             .map(Tick::new)
     }
 }

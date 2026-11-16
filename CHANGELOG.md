@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- feat(scheduler)!: own the schedule cursor on miju 0.3 ([#22](https://github.com/nanfeng-labs/miju-cron/pull/22))
 - ci: append full changelog links to releases ([#23](https://github.com/nanfeng-labs/miju-cron/pull/23))
 
 ## [0.2.1](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.2.1)

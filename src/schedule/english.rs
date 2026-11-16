@@ -148,11 +148,14 @@ impl From<cron::error::Error> for EnglishRoutineError {
 }
 
 impl<Tz: chrono::TimeZone> Schedule<Tz> for EnglishRoutine {
-    fn next_tick(&mut self, timezone: &Tz) -> Option<Tick<Tz>> {
+    fn next_after(&self, after: &Tick<Tz>, timezone: &Tz) -> Option<Tick<Tz>> {
+        let after = timezone
+            .timestamp_opt(i64::try_from(after.get_timestamp()).ok()?, 0)
+            .single()?;
         self.schedule
-            .upcoming(timezone.clone())
+            .after(&after)
             .next()
-            .map(|s| s.timestamp() as _)
+            .and_then(|d| u64::try_from(d.timestamp()).ok())
             .map(Tick::new)
     }
 }

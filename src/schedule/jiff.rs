@@ -1,4 +1,4 @@
-use jiff_cron::jiff::tz::TimeZone;
+use jiff_cron::jiff::{Timestamp, tz::TimeZone};
 
 use crate::{Tick, schedule::Schedule};
 
@@ -6,10 +6,11 @@ use crate::{Tick, schedule::Schedule};
 pub use jiff_cron::Schedule as JiffSchedule;
 
 impl Schedule<TimeZone> for jiff_cron::Schedule {
-    fn next_tick(&mut self, timezone: &TimeZone) -> Option<Tick<TimeZone>> {
-        self.upcoming(timezone.clone())
+    fn next_after(&self, after: &Tick<TimeZone>, timezone: &TimeZone) -> Option<Tick<TimeZone>> {
+        let after = Timestamp::from_second(i64::try_from(after.get_timestamp()).ok()?).ok()?;
+        self.after(after.to_zoned(timezone.clone()))
             .next()
-            .map(|d| d.timestamp().as_second() as _)
+            .and_then(|d| u64::try_from(d.timestamp().as_second()).ok())
             .map(Tick::new)
     }
 }

@@ -49,6 +49,12 @@ criteria = "safe-to-run"
 delta = "0.2.0 -> 0.2.1"
 notes = "Reviewed the published package delta against the release commit. Rust implementation sources are unchanged; updates are limited to package metadata, documentation or generated lockfiles, and internal miju dependency requirements moving to 0.2.1. No new runtime dependencies, build scripts or unsafe code. The 0.2.0 exemption remains the baseline; internal dependencies are reviewed separately."
 
+[[audits.miju]]
+who = "Claude Code (AI-assisted source review)"
+criteria = "safe-to-run"
+delta = "0.2.1 -> 0.3.0"
+notes = "Reviewed the published 0.2.1 to 0.3.0 package delta. Rust changes are documentation only (timeout/parallelize ordering note, docsrs attribute form). Manifest adds a `sleep` feature forwarding to miju-core and moves metrics-exporter-prometheus from an optional `prometheus` dependency to a dev-dependency; internal miju requirements move to 0.3.0. No new runtime dependencies, build scripts or unsafe code. Internal dependencies are reviewed separately."
+
 [[audits.miju-codec]]
 who = "Codex (AI-assisted source review)"
 criteria = "safe-to-run"
@@ -61,17 +67,35 @@ criteria = "safe-to-run"
 delta = "0.2.0 -> 0.2.1"
 notes = "Reviewed the published package delta against the release commit. Rust implementation sources are unchanged; updates are limited to package metadata, documentation or generated lockfiles, and internal miju dependency requirements moving to 0.2.1. No new runtime dependencies, build scripts or unsafe code. The 0.2.0 exemption remains the baseline; internal dependencies are reviewed separately."
 
+[[audits.miju-codec]]
+who = "Claude Code (AI-assisted source review)"
+criteria = "safe-to-run"
+delta = "0.2.1 -> 0.3.0"
+notes = "Reviewed the published 0.2.1 to 0.3.0 package delta. The only Rust change documents and tests that MessagePack decoding accepts trailing bytes; behaviour is unchanged. Internal miju requirement moves to 0.3.0. No new runtime dependencies, build scripts or unsafe code."
+
 [[audits.miju-core]]
 who = "Codex (AI-assisted source review)"
 criteria = "safe-to-deploy"
 delta = "0.2.0 -> 0.2.1"
 notes = "Reviewed the published 0.2.0 to 0.2.1 source and manifest delta against the release commit. Runtime changes are confined to Monitor: retain an observed signal error outside the terminator future and yield with an explicit wake after successful restart. No public type, unsafe code, I/O boundary, or third-party dependency requirement changes. Reviewed regression tests for both changes and isolated restart ablations. The 0.2.0 exemption remains the baseline; dependencies require separate coverage."
 
+[[audits.miju-core]]
+who = "Claude Code (AI-assisted source review)"
+criteria = "safe-to-deploy"
+delta = "0.2.1 -> 0.3.0"
+notes = "Reviewed the published 0.2.1 to 0.3.0 source and manifest delta. Manifest changes add test targets only; no dependency requirement changes. Runtime changes are lifecycle and wake-up fixes: typed TaskLifecycleError for duplicate or missing task IDs instead of panics, running-task tracking by TaskId, repeatable stop/kill and shutdown notification, persistence draining, memory-sink readiness reservation and idempotency-key release, pipe/stream exhaustion memory, circuit-breaker admission, and shared-backend waker relays. The `shared` feature now parks the calling thread in `lock_blocking` while building middleware under lock contention, which can stall a single-threaded executor if the holder runs on the same thread; this is a liveness concern, not a memory-safety or I/O issue. No unsafe code, new I/O, process or network access; thread spawning is confined to tests. Dependencies require separate coverage."
+
 [[audits.miju-file-storage]]
 who = "Codex (AI-assisted source review)"
 criteria = "safe-to-run"
 delta = "0.2.0 -> 0.2.1"
 notes = "Reviewed the published package delta against the release commit. Rust implementation sources are unchanged; updates are limited to package metadata, documentation or generated lockfiles, and internal miju dependency requirements moving to 0.2.1. No new runtime dependencies, build scripts or unsafe code. The 0.2.0 exemption remains the baseline; internal dependencies are reviewed separately."
+
+[[audits.miju-file-storage]]
+who = "Claude Code (AI-assisted source review)"
+criteria = "safe-to-run"
+delta = "0.2.1 -> 0.3.0"
+notes = "Reviewed the published 0.2.1 to 0.3.0 package delta. Runtime changes: new CSV files store task IDs in a hex-encoded JSON `task_id_v1` column with strict header validation, reopened files skip records that already have a result, flush waits for clone locks instead of failing, and wait_for reports a new PoisonedLock error. File access stays on the configured storage path; the added File::open is in a unit test. Manifest adds test targets and a miju-core dev-dependency. No new runtime dependencies, build scripts or unsafe code."
 
 [[audits.phf]]
 who = "Codex (AI-assisted source review)"

@@ -165,33 +165,57 @@ async fn main() -> Result<(), BoxDynError> {
 # }
 ```
 
-`new_temp()` 创建的是演示用临时存储。只有已送达目标后端的任务才能获得其存储保证；用于应用前，请阅读文件后端的持久化和并发约定。这种组合不会持久化调度规则、补发停机期间的任务、选举主节点或保证恰好执行一次。
+`new_temp()` 创建的是演示用临时存储。只有已送达目标后端的任务才能获得其存储保证；用于应用前，请阅读文件后端的持久化和并发约定。这种组合不会持久化调度规则、选举主节点或保证恰好执行一次；去重与补发停机期间的任务见下文的 `with_name` 和 `resume_after`。
 
 ### 自定义调度
 
-实现 `Schedule<Tz>`，返回以秒为单位的下一个 UTC UNIX 时间戳；没有后续事件时返回 `None`。下面的规则产生两个 tick：
+实现 `Schedule<Tz>`，返回严格晚于给定 tick 的第一个 UTC UNIX 时间戳（秒）；没有后续事件时返回 `None`。游标由调度器维护，实现本身无需保存状态。下面的规则产生两个 tick：
 
 ```rust
 use miju_cron::{CronScheduler, Schedule, Tick, timezone::Utc};
-use std::collections::VecDeque;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
-struct Occurrences(VecDeque<u64>);
+struct Occurrences(Vec<u64>);
 
 impl Schedule<Utc> for Occurrences {
-    fn next_tick(&mut self, _: &Utc) -> Option<Tick<Utc>> {
-        self.0.pop_front().map(Tick::new)
+    fn next_after(&self, after: &Tick<Utc>, _: &Utc) -> Option<Tick<Utc>> {
+        self.0
+            .iter()
+            .copied()
+            .find(|t| *t > after.get_timestamp())
+            .map(Tick::new)
     }
 }
 
 let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-let schedule = Occurrences(VecDeque::from([now + 10, now + 20]));
+let schedule = Occurrences(vec![now + 10, now + 20]);
 let backend = CronScheduler::new(schedule);
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-使用 miju 0.2.0 时，Worker 可以在有限调度流耗尽后完成关闭。自定义实现应返回有效的时间戳，并自行定义时区切换和错过执行时间时的处理方式。
+Worker 会在有限调度流耗尽后关闭。自定义实现应返回有效的时间戳，并自行定义时区切换的处理方式。
+
+### 命名、续跑与错过的 tick
+
+```rust,no_run
+# #[cfg(feature = "cron")]
+# fn example(last_handled: miju_cron::Tick) -> Result<(), Box<dyn std::error::Error>> {
+use cron::Schedule;
+use miju_cron::{CronScheduler, MissedTickPolicy};
+use std::str::FromStr;
+
+let backend = CronScheduler::new(Schedule::from_str("0 */5 * * * *")?)
+    .with_name("report")
+    .resume_after(&last_handled)
+    .missed_ticks(MissedTickPolicy::CatchUp);
+# Ok(())
+# }
+```
+
+- `with_name` 让任务 ID 变为确定值，并设置幂等键 `"{name}@{timestamp}"`。同名的多个副本或重启后的进程对同一 tick 产生相同 ID：支持幂等键的后端只存一次，仍在运行的重复任务会被 miju 拒绝。未命名的调度器仍使用随机 ULID。向同一 Worker 或存储投递的多个调度器应使用不同名称。
+- `resume_after` 从保存的 tick 之后开始，而不是从当前时间开始。不设置时，进程停机期间到期的 tick 会被跳过。
+- `MissedTickPolicy::Once`（默认）交付最早到期的 tick，然后从当前时间继续；`CatchUp` 按顺序交付所有到期的 tick。
 
 ### 直接消费 tick 流
 
@@ -292,7 +316,7 @@ Worker 在调用处理器前，通过配置的中间件提供重试、共享数�
 
 ```mermaid
 flowchart LR
-    tick["1. 使用缓存 tick<br/>或 next_tick(&timezone)"] -->|"Some(tick)"| timer["2. 创建或复用定时器<br/>已经到期：等待时间为零"]
+    tick["1. 使用缓存 tick<br/>或 next_after(cursor, &timezone)"] -->|"Some(tick)"| timer["2. 创建或复用定时器<br/>已经到期：等待时间为零"]
     timer -->|"就绪"| prefetch["3. 取出 tick，清除定时器<br/>预取下一个 tick<br/>（尚未创建定时器）"]
     prefetch --> task["4. 构建并返回<br/>当前 Task&lt;Tick&lt;Tz&gt;&gt;"]
     tick -->|"None"| exhausted["Ready(None)"]
@@ -305,7 +329,7 @@ flowchart LR
 <summary>文字版本</summary>
 
 ```text
-Use cached tick, or call Schedule::next_tick(&timezone)
+Use cached tick, or call Schedule::next_after(cursor, &timezone)
     |
     +-- None ---------------------------> Ready(None)
     |
@@ -328,14 +352,14 @@ Build and return Task<Tick<Tz>>
 
 </details>
 
-流程依次为取出或计算 tick、等待到期、清除当前缓存与定时器、预取下一个 tick，最后构建并返回当前任务。预取发生在当前任务返回之前，无需等待处理器完成。每个任务的 ULID 时间部分取自计划时间戳。
+流程依次为取出或计算 tick、等待到期、清除当前缓存与定时器、预取下一个 tick，最后构建并返回当前任务。预取发生在当前任务返回之前，无需等待处理器完成。每个任务的 ULID 时间部分取自计划时间戳；命名调度器的其余部分由名称派生。
 
-Cron、英文和 Jiff 适配器依据当前时钟计算下一次事件；builder 首次依据当前时钟，后续从前一个 tick 继续推进；自定义规则自行定义推进方式。定时器依赖真实经过时间，不受 Tokio 暂停时钟驱动。
+调度器维护一个游标：初始为当前时间（或 `resume_after` 指定的 tick），每次交付后推进到该 tick（`CatchUp`），或推进到该 tick 与当前时间中较晚者（`Once`）。调度规则计算游标之后的第一次事件，因此同一 tick 不会产生两次。定时器依赖真实经过时间，不受 Tokio 暂停时钟驱动；若定时器到期时墙钟尚未到达 tick，调度器会重新等待，而不是提前触发。
 
 - `Tick<Tz>` 保存以秒为单位的 UTC UNIX 时间戳；时区类型描述调度规则如何解释时间。
 - `Config<S, Tz>` 保存调度规则和时区，Serde 将二者存为字符串；tick 的序列化字段为 `timestamp` 和 `_marker`。
 - 无法表示的时间戳返回 `InvalidTimestamp` 并保留缓存，重复轮询仍返回错误，不推进规则。有效但已到期的 tick 会延迟交付，保留原计划时间戳；消费者背压导致预取 tick 过期时也遵循此规则。这不会补建调度适配器未返回的执行时间。
-- 在截止时间前创建的定时器可以在较晚的轮询中产生任务。克隆或切换时区会清除定时器和缓存 tick，但保留调度规则已经推进的状态。
+- 在截止时间前创建的定时器可以在较晚的轮询中产生任务。克隆或切换时区会清除定时器和缓存 tick，但保留游标、名称和策略。
 - `poll_close` 立即确认关闭，不重置调度器；丢弃调度器会取消定时器。
 
 ## 示例与文档
