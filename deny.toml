@@ -1,5 +1,9 @@
 [advisories]
 yanked = "deny"
+ignore = [
+    { id = "RUSTSEC-2026-0543", reason = "Required by the public Chrono scheduling API and the cron adapter." },
+    { id = "RUSTSEC-2026-0555", reason = "Provides the IANA time zone types exposed by the chrono feature." },
+]
 [licenses]
 allow = ["Apache-2.0", "BSD-3-Clause", "MIT", "Unicode-3.0", "Zlib"]
 [bans]
