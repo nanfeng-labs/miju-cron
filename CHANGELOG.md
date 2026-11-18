@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- ci: exempt two Chrono maintenance advisories ([#25](https://github.com/nanfeng-labs/miju-cron/pull/25))
+
 ## [0.3.0](https://github.com/nanfeng-labs/miju-cron/releases/tag/v0.3.0)
 
 - bump: to v0.3.0 ([#24](https://github.com/nanfeng-labs/miju-cron/pull/24))
